@@ -6,29 +6,11 @@ resource "aws_instance" "prefect_instance" {
   key_name                    = aws_key_pair.dev_ssh_key.key_name
   vpc_security_group_ids      = [aws_security_group.main_sg.id]
 
-#   user_data = data.template_file.prefect_install.rendered
+  user_data = data.template_file.prefect_install.rendered
 
   tags = {
     Name = "Prefect"
   }
-}
-
-# Create a separate volume in case we ever need to destroy and recreate the instance. We need the data!
-# In case you change the size of the EBS volume, you need to SSH into the EC2 instance, confirm extra block size (`lsblk`), then run `sudo resize2fs /dev/nvme1n1` to fill up the new space
-resource "aws_ebs_volume" "prefect_storage" {
-  availability_zone = "eu-central-1a"
-  size              = 10
-  type              = "gp3"
-
-  tags = {
-    Name = "Prefect storage"
-  }
-}
-
-resource "aws_volume_attachment" "prefect_attachment" {
-  volume_id   = aws_ebs_volume.prefect_storage.id
-  instance_id = aws_instance.prefect_instance.id
-  device_name = "/dev/sdh"
 }
 
 output "instance_public_ip" {
