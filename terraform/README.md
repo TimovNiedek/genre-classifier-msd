@@ -5,7 +5,7 @@ This is largely based on [this guide](https://medium.com/@kelvingakuo/self-hosti
 with several modifications.
 
 My goal was to set up the Prefect server in a way that would easily facilitate collaboration through a shared EC2 instance,
-and to make it easy to set up and tear down the server as needed. For additional stability, I've modified the Terraform code from the 
+and to make it easy to set up and tear down the server as needed. For additional stability, I've modified the Terraform code from the
 blog post to start the Prefect server and work pool as a systemd service, so that it will automatically restart if the server is rebooted.
 
 ## Prerequisites
@@ -13,7 +13,7 @@ blog post to start the Prefect server and work pool as a systemd service, so tha
 ### SSH Key
 
 You need to have generated an ssh key pair and have the private key available on your machine.
-The name should be `dev_key` and `dev_key.pub` for the private and public key respectively. 
+The name should be `dev_key` and `dev_key.pub` for the private and public key respectively.
 The key can be generated using the following command:
 
 ```bash
@@ -50,4 +50,4 @@ dev_ssh_public_key = "ssh-rsa AAAAB3NzaC1y..."  # your public key
 
 - The prefect server uses SQLite as the default database. This is not recommended for production use, instead use PostgreSQL.
 - The current setup is not secure and should not be used in production.
-- Prefect uses a docker work pool on the same machine as the server. Alternatively, an ECS work pool could be used to fully utilize the cloud resources. 
+- Prefect uses a docker work pool on the same machine as the server. Alternatively, an ECS work pool could be used to fully utilize the cloud resources.
