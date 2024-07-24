@@ -9,6 +9,7 @@ pandas = "*"
 pyarrow = "*"
 h5py = "*"
 tables = "*"
+scikit-learn = "*"
 
 [dev-packages]
 pre-commit = "*"
