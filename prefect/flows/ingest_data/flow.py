@@ -1,9 +1,11 @@
 import datetime
+from typing import Optional
 
 from pathlib import Path
 from prefect import flow, task, get_run_logger
 from prefect_shell.commands import ShellOperation
 from prefect.deployments import DeploymentImage
+from prefect_aws import S3Bucket
 
 
 @task(retries=1, retry_delay_seconds=2)
@@ -14,7 +16,7 @@ def download_msd_subset(target_dir: Path) -> None:
     ShellOperation(
         commands=[
             "mkdir -p ${target_dir}",
-            "wget -P ${target_dir}/ http://labrosa.ee.columbia.edu/~dpwe/tmp/millionsongsubset.tar.gz",
+            "wget -q -P ${target_dir}/ http://labrosa.ee.columbia.edu/~dpwe/tmp/millionsongsubset.tar.gz",
             "tar -xzvf ${target_dir}/millionsongsubset.tar.gz -C ${target_dir}/",
         ],
         env={"target_dir": str(target_dir)},
@@ -27,14 +29,24 @@ def list_files(data_dir: Path) -> None:
     h5_files = list(sorted(Path(data_dir).rglob("*.h5")))
     logger = get_run_logger()
     logger.info(f"Total files: {len(h5_files)}")
-    for file in h5_files:
-        logger.info(file)
+
+
+@task
+def upload_to_s3(data_dir: Path, target_dir: Optional[Path]) -> int:
+    logger = get_run_logger()
+    bucket = S3Bucket.load("million-songs-dataset-s3")
+    to_path = str(target_dir) if target_dir is not None else None
+    file_count = bucket.put_directory(local_path=str(data_dir), to_path=to_path)
+    logger.info(f"Uploaded {file_count} files to {bucket.bucket_name}")
+    return file_count
 
 
 @flow(log_prints=True)
 def ingest_flow():
-    download_completion = download_msd_subset(Path("data"))
-    list_files(Path("data"), wait_for=[download_completion])
+    local_data_path = Path("data")
+    download_completion = download_msd_subset(local_data_path)
+    list_files(local_data_path, wait_for=[download_completion])
+    upload_to_s3(local_data_path, Path("subset"), wait_for=[download_completion])
 
 
 if __name__ == "__main__":
