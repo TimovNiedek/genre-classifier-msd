@@ -8,6 +8,10 @@ resource "aws_instance" "prefect_instance" {
 
   user_data = data.template_file.prefect_install.rendered
 
+  root_block_device {
+    volume_size = 50
+  }
+
   tags = {
     Name = "Prefect"
   }

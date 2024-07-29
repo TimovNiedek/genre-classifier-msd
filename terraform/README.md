@@ -34,17 +34,6 @@ dev_ssh_public_key = "ssh-rsa AAAAB3NzaC1y..."  # your public key
 
 1. Run `terraform init` to initialize the terraform environment.
 2. Run `terraform apply -var-file=variables.tfvars` to create the resources.
-3. Update ~/.ssh/config with the following content:
-    ```ssh-config
-    Host prefect-zoomcamp
-        HostName <IP>
-        User ubuntu
-        IdentityFile ~/.ssh/dev_key
-        StrictHostKeyChecking no
-    ```
-4. Port forward the prefect server to your local machine by running `ssh -N -L 4200:localhost:4200 prefect-zoomcamp`.
-5. After a couple of minutes should be able to access the Prefect UI through http://localhost:4200/dashboard.
-6. Run `pipenv run prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"` before executing flows.
 
 ## Additional notes
 
