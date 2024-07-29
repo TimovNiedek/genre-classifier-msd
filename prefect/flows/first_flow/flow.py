@@ -1,4 +1,4 @@
-from prefect import flow, task
+from prefect import flow, task, get_run_logger
 import pandas as pd
 
 
@@ -12,7 +12,8 @@ def ingest_file(color="yellow", year=2024, month=3) -> pd.DataFrame:
 
 @task
 def print_size(data: pd.DataFrame):
-    print(len(data))
+    logger = get_run_logger()
+    logger.info(len(data))
 
 
 @flow(log_prints=True)
@@ -22,4 +23,8 @@ def basic_flow(color="yellow", year=2024, month=3):
 
 
 if __name__ == "__main__":
-    basic_flow()
+    basic_flow.deploy(
+        name="first-deployment-test",
+        work_pool_name="docker-work-pool",
+        image="timovanniedek/mlops-zoomcamp-train",
+    )

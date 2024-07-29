@@ -10,6 +10,8 @@ pyarrow = "*"
 h5py = "*"
 tables = "*"
 scikit-learn = "*"
+prefect-aws = "*"
+prefect-shell = "*"
 
 [dev-packages]
 pre-commit = "*"
