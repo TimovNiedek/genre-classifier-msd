@@ -26,3 +26,21 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 3. After a couple of minutes should be able to access the Prefect UI through http://localhost:4200/dashboard.
 4. Run `pipenv run prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"` before executing flows.
 5. Set the default work pool to the docker work pool: `prefect config set PREFECT_DEFAULT_WORK_POOL_NAME=docker-work-pool`
+
+## To-Do's
+
+* [ ] Add makefile
+    * [ ] Deploy training pipeline
+    * [ ] Execute training pipeline
+    * [ ] Test flow steps
+* [ ] Add unit tests
+* [ ] Add integration tests
+* [ ] Add CI / CD
+* [ ] Add mlflow server to IaC
+* [ ] Add observability tooling
+* [ ] Add experiment tracking
+* [ ] Design deployment method (batch / streaming)
+    * [ ] Mock new incoming data
+* [ ] Containerize & deploy model
+* [ ] Ensure dependency versions are specified
+* [ ] Experiment with better model architectures
