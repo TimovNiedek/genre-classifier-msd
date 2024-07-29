@@ -17,7 +17,7 @@ def download_msd_subset(target_dir: Path) -> None:
         commands=[
             "mkdir -p ${target_dir}",
             "wget -q -P ${target_dir}/ http://labrosa.ee.columbia.edu/~dpwe/tmp/millionsongsubset.tar.gz",
-            "tar -xzvf ${target_dir}/millionsongsubset.tar.gz -C ${target_dir}/",
+            "tar -xzf ${target_dir}/millionsongsubset.tar.gz -C ${target_dir}/",
         ],
         env={"target_dir": str(target_dir)},
     ).run()
