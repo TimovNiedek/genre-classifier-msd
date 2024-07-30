@@ -103,13 +103,9 @@ async def preprocess_flow(
 ):
     paths = list_file_paths(bucket_folder, limit)
     genre_filter = get_genres_list(genres_url)
-    print(genre_filter)
-    print("Submitting get_song_metadata")
     coros = [get_song_metadata(path, genre_filter) for path in paths]
-    print("Submitted get_song_metadata")
-    song_metadata_futures = await asyncio.gather(*coros)
-    print(song_metadata_futures)
-    print("Got result get_song_metadata")
+    song_metadata = await asyncio.gather(*coros)
+    print(len(song_metadata), song_metadata[0])
 
 
 if __name__ == "__main__":
