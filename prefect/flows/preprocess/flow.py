@@ -1,10 +1,14 @@
-from prefect import flow, task, get_run_logger, unmapped
+from prefect import flow, task, get_run_logger
 from prefect_aws import S3Bucket
+from prefect_dask.task_runners import DaskTaskRunner
+from pydantic import BaseModel
+from pathlib import Path
+import pandas as pd
+import tempfile
 
 from urllib import request
-import asyncio
 
-from typing import Any, Optional
+from typing import Optional
 import h5py
 from io import BytesIO
 
@@ -39,7 +43,7 @@ def normalize_genre(genre_str) -> str:
     return genre_str.lower().replace("-", " ")
 
 
-# @task(cache_key_fn=task_input_hash)
+@task
 def get_genres_list(url: str = DEFAULT_GENRES_URL) -> list[str]:
     logger = get_run_logger()
     with request.urlopen(url) as f:
@@ -56,7 +60,7 @@ def get_genres_list(url: str = DEFAULT_GENRES_URL) -> list[str]:
     return genres_list
 
 
-def get_features(h5_file: h5py.File) -> dict[str, float | int]:
+def get_features(h5_file: h5py.File) -> dict[str, float | int | None]:
     features = {}
     for feature_name in ANALYSIS_FEATURE_NAMES:
         feature_value = h5_file["analysis"]["songs"][feature_name][0]
@@ -74,27 +78,21 @@ def get_genres(h5_file: h5py.File, genre_filter: list[str]) -> list[str]:
     return genre_tags
 
 
-@task
-async def get_song_metadata_async(
-    h5_path: str, genre_filter: list[str] = []
-) -> dict[str, Any]:
-    logger = get_run_logger()
-    logger.info(f"Loading file from path {h5_path}")
-    bucket = await S3Bucket.load("million-songs-dataset-s3")
-    with BytesIO() as buf:
-        await bucket.download_object_to_file_object(h5_path, buf)
-
-        with h5py.File(buf, mode="r") as f:
-            genre_tags = get_genres(f, genre_filter)
-            features = get_features(f)
-
-    metadata = {"features": features, "genre_tags": genre_tags}
-    logger.info(metadata)
-    return metadata
+class SongMetadata(BaseModel):
+    song_id: str
+    danceability: float | None
+    duration: float | None
+    energy: float | None
+    key: int | None
+    loudness: float | None
+    mode: int | None
+    tempo: float | None
+    year: int | None
+    genres: list[str]
 
 
 @task
-def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> dict[str, Any]:
+def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> SongMetadata:
     logger = get_run_logger()
     logger.info(f"Loading file from path {h5_path}")
     bucket = S3Bucket.load("million-songs-dataset-s3")
@@ -105,39 +103,49 @@ def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> dict[str, A
             genre_tags = get_genres(f, genre_filter)
             features = get_features(f)
 
-    metadata = {"features": features, "genre_tags": genre_tags}
-    logger.info(metadata)
-    return metadata
+    song_id = Path(h5_path).stem
+    song_metadata = SongMetadata(song_id=song_id, genres=genre_tags, **features)
+
+    logger.debug(dict(song_metadata))
+    return song_metadata
 
 
-@flow(log_prints=True)
-async def preprocess_flow(
-    bucket_folder: str = "subset/MillionSongSubset",
-    genres_url: str = DEFAULT_GENRES_URL,
-    limit: Optional[int] = 3000,
+@task
+def write_features(
+    song_metadata: list[SongMetadata],
+    target_path: str = "subset/MillionSongSubset/subset.parquet",
 ):
-    paths = list_file_paths(bucket_folder, limit)
-    genre_filter = get_genres_list(genres_url)
-    coros = [get_song_metadata_async(path, genre_filter) for path in paths]
-    song_metadata = await asyncio.gather(*coros)
-    print(len(song_metadata), song_metadata[0])
+    logger = get_run_logger()
+    bucket = S3Bucket.load("million-songs-dataset-s3")
+    df = pd.DataFrame([dict(song) for song in song_metadata])
+    logger.info(df.head())
+
+    with tempfile.NamedTemporaryFile(mode="w") as f:
+        df.to_parquet(f.name)
+        bucket.upload_from_path(from_path=f.name, to_path=target_path)
 
 
-@flow(log_prints=True)
-def preprocess_flow_map(
+@flow(task_runner=DaskTaskRunner(cluster_kwargs={"n_workers": 5}))
+def preprocess_flow(
     bucket_folder: str = "subset/MillionSongSubset",
     genres_url: str = DEFAULT_GENRES_URL,
     limit: Optional[int] = 10,
 ):
-    paths = list_file_paths(bucket_folder, limit)
-    genre_filter = get_genres_list(genres_url)
-    song_metadata = get_song_metadata.map(paths, unmapped(genre_filter))
-    print(len(song_metadata))
+    logger = get_run_logger()
+    paths = list_file_paths.submit(bucket_folder, limit)
+    genre_filter = get_genres_list.submit(genres_url)
+    song_meta_futures = []
+    for song_path in paths.result():
+        song_metadata = get_song_metadata.submit(song_path, genre_filter)
+        song_meta_futures.append(song_metadata)
+    logger.info(f"Extracting metadata for {len(song_meta_futures)} songs")
+    write_features(
+        song_meta_futures, target_path="subset/MillionSongSubset/subset.parquet"
+    )
 
 
 if __name__ == "__main__":
-    # asyncio.run(preprocess_flow())
-    preprocess_flow_map.deploy(
+    preprocess_flow.deploy(
         name="genre-classifier-preprocess-v0",
         work_pool_name="docker-work-pool",
         image="timovanniedek/genre-classifier-preprocess",
