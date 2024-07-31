@@ -1,6 +1,6 @@
 from prefect import flow, task, get_run_logger
 from prefect_aws import S3Bucket
-from prefect_dask.task_runners import DaskTaskRunner
+from prefect.task_runners import ConcurrentTaskRunner
 from pydantic import BaseModel
 from pathlib import Path
 import pandas as pd
@@ -26,10 +26,12 @@ ANALYSIS_FEATURE_NAMES = [
 MUSICBRAINZ_FEATURE_NAMES = ["year"]
 
 
+bucket = S3Bucket.load("million-songs-dataset-s3")
+
+
 @task
 def list_file_paths(bucket_folder: str, n: Optional[int] = None) -> list[str]:
     logger = get_run_logger()
-    bucket = S3Bucket.load("million-songs-dataset-s3")
     objects = bucket.list_objects(folder=bucket_folder)
     object_keys = [obj["Key"] for obj in objects if obj["Key"].endswith(".h5")]
     logger.info(f"Found {len(object_keys)} objects")
@@ -91,11 +93,7 @@ class SongMetadata(BaseModel):
     genres: list[str]
 
 
-@task
 def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> SongMetadata:
-    logger = get_run_logger()
-    logger.info(f"Loading file from path {h5_path}")
-    bucket = S3Bucket.load("million-songs-dataset-s3")
     with BytesIO() as buf:
         bucket.download_object_to_file_object(h5_path, buf)
 
@@ -106,7 +104,6 @@ def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> SongMetadat
     song_id = Path(h5_path).stem
     song_metadata = SongMetadata(song_id=song_id, genres=genre_tags, **features)
 
-    logger.debug(dict(song_metadata))
     return song_metadata
 
 
@@ -116,7 +113,6 @@ def write_features(
     target_path: str = "subset/MillionSongSubset/subset.parquet",
 ):
     logger = get_run_logger()
-    bucket = S3Bucket.load("million-songs-dataset-s3")
     df = pd.DataFrame([dict(song) for song in song_metadata])
     logger.info(df.head())
 
@@ -125,7 +121,18 @@ def write_features(
         bucket.upload_from_path(from_path=f.name, to_path=target_path)
 
 
-@flow(task_runner=DaskTaskRunner(cluster_kwargs={"n_workers": 5}))
+@task
+def get_song_metadata_list(
+    h5_paths: str, genre_filter: list[str] = []
+) -> list[SongMetadata]:
+    song_metas = []
+    for h5_path in h5_paths:
+        song_metadata = get_song_metadata(h5_path, genre_filter=genre_filter)
+        song_metas.append(song_metadata)
+    return song_metas
+
+
+@flow(task_runner=ConcurrentTaskRunner())
 def preprocess_flow(
     bucket_folder: str = "subset/MillionSongSubset",
     genres_url: str = DEFAULT_GENRES_URL,
@@ -134,14 +141,9 @@ def preprocess_flow(
     logger = get_run_logger()
     paths = list_file_paths.submit(bucket_folder, limit)
     genre_filter = get_genres_list.submit(genres_url)
-    song_meta_futures = []
-    for song_path in paths.result():
-        song_metadata = get_song_metadata.submit(song_path, genre_filter)
-        song_meta_futures.append(song_metadata)
-    logger.info(f"Extracting metadata for {len(song_meta_futures)} songs")
-    write_features(
-        song_meta_futures, target_path="subset/MillionSongSubset/subset.parquet"
-    )
+    song_metas = get_song_metadata_list(paths, genre_filter)
+    logger.info(f"Extracted metadata for {len(song_metas)} songs")
+    write_features(song_metas, target_path="subset/MillionSongSubset/subset.parquet")
 
 
 if __name__ == "__main__":
