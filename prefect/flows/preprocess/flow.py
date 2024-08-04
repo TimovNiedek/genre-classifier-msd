@@ -135,6 +135,7 @@ def get_song_metadata_list(
 @flow(task_runner=ConcurrentTaskRunner())
 def preprocess_flow(
     bucket_folder: str = "subset/MillionSongSubset",
+    target_path: str = "subset/MillionSongSubset/subset.parquet",
     genres_url: str = DEFAULT_GENRES_URL,
     limit: Optional[int] = 10,
 ):
@@ -143,7 +144,7 @@ def preprocess_flow(
     genre_filter = get_genres_list.submit(genres_url)
     song_metas = get_song_metadata_list(paths, genre_filter)
     logger.info(f"Extracted metadata for {len(song_metas)} songs")
-    write_features(song_metas, target_path="subset/MillionSongSubset/subset.parquet")
+    write_features(song_metas, target_path=target_path)
 
 
 if __name__ == "__main__":
