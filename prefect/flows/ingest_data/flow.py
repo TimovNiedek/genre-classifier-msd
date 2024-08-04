@@ -1,10 +1,8 @@
-import datetime
 from typing import Optional
 
 from pathlib import Path
 from prefect import flow, task, get_run_logger
 from prefect_shell.commands import ShellOperation
-from prefect.deployments import DeploymentImage
 from prefect_aws import S3Bucket
 
 
@@ -53,9 +51,7 @@ if __name__ == "__main__":
     ingest_flow.deploy(
         name="genre-classifier-ingest-v0",
         work_pool_name="docker-work-pool",
-        image=DeploymentImage(
-            name="timovanniedek/genre-classifier-ingest",
-            tag=datetime.datetime.now().isoformat().replace(":", "-").lower(),
-            dockerfile="Dockerfile",
-        ),
+        image="timovanniedek/genre-classifier-train",
+        build=False,
+        entrypoint="flows/ingest_data/flow.py:ingest_flow",
     )
