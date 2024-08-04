@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "genre-classifier"
+version = "0.1.0"
+description = ""
+authors = ["Timo van Niedek <timovanniedek@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+prefect = "*"
+pandas = "*"
+pyarrow = "*"
+h5py = "*"
+tables = "*"
+scikit-learn = "*"
+prefect-aws = "*"
+prefect-shell = "*"
+prefect-dask = "*"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "*"
+jupyter = "*"
+matplotlib = "*"
+tqdm = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
