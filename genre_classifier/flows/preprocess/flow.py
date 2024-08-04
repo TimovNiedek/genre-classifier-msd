@@ -148,8 +148,4 @@ def preprocess_flow(
 
 
 if __name__ == "__main__":
-    preprocess_flow.deploy(
-        name="genre-classifier-preprocess-v0",
-        work_pool_name="docker-work-pool",
-        image="timovanniedek/genre-classifier-preprocess",
-    )
+    preprocess_flow()

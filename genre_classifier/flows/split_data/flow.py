@@ -1,17 +1,14 @@
 from prefect import flow, task
-from prefect_aws import S3Bucket
 from sklearn.model_selection import train_test_split
 
+from genre_classifier.utils import read_parquet_data, write_parquet_data
 
 import pandas as pd
-
-bucket = S3Bucket.load("million-songs-dataset-s3")
 
 
 @task
 def read_data(data_path: str) -> pd.DataFrame:
-    full_path = "s3://" + "/".join([bucket.bucket_name, data_path])
-    data = pd.read_parquet(full_path).set_index("song_id")
+    data = read_parquet_data(data_path, "million-songs-dataset-s3").set_index("song_id")
     return data
 
 
@@ -30,12 +27,11 @@ def split_train_val_test(
 
 @task
 def upload_df_to_s3(df: pd.DataFrame, data_path: str) -> None:
-    full_path = "s3://" + "/".join([bucket.bucket_name, data_path])
-    df.to_parquet(full_path)
+    write_parquet_data(df, data_path, "million-songs-dataset-s3")
 
 
 @flow(log_prints=True)
-def split_data(
+def split_data_flow(
     data_path: str = "subset/MillionSongSubset/subset.parquet",
     val_size: float = 0.1,
     test_size: float = 0.1,
@@ -51,4 +47,4 @@ def split_data(
 
 
 if __name__ == "__main__":
-    split_data()
+    split_data_flow()

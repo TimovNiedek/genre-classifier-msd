@@ -7,5 +7,5 @@ RUN  apt-get update \
 COPY requirements.txt /opt/prefect/requirements.txt
 RUN python -m pip install -r /opt/prefect/requirements.txt
 
-COPY prefect/flows /opt/prefect/flows
+COPY genre_classifier /opt/prefect/genre_classifier
 WORKDIR /opt/prefect

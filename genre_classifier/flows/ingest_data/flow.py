@@ -48,10 +48,4 @@ def ingest_flow():
 
 
 if __name__ == "__main__":
-    ingest_flow.deploy(
-        name="genre-classifier-ingest-v0",
-        work_pool_name="docker-work-pool",
-        image="timovanniedek/genre-classifier-train",
-        build=False,
-        entrypoint="flows/ingest_data/flow.py:ingest_flow",
-    )
+    ingest_flow()
