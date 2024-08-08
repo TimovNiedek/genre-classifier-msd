@@ -74,12 +74,14 @@ def fix_outliers(
 
 @task
 def train(
-    train_data: pd.DataFrame, top_genres: list[str], seed=42
+    train_data: pd.DataFrame,
+    top_genres: list[str],
+    impute_missing_values: bool = True,
+    imputer_n_neighbors: int = 5,
+    class_weight: str | None = "balanced",
+    seed=42,
 ) -> tuple[Pipeline, MultiLabelBinarizer]:
-    imputer = KNNImputer(n_neighbors=2, weights="distance").set_output(
-        transform="pandas"
-    )
-    mlb = MultiLabelBinarizer(classes=top_genres)
+    pipeline_steps = []
 
     ct = make_column_transformer(
         (MinMaxScaler(clip=True), NUMERICAL_COLS),
@@ -87,10 +89,19 @@ def train(
         ("passthrough", BINARY_COLS),
         remainder="drop",
     )
+    pipeline_steps.append(ct)
 
-    rfc = RandomForestClassifier(random_state=seed, class_weight="balanced")
+    if impute_missing_values:
+        imputer = KNNImputer(
+            n_neighbors=imputer_n_neighbors, weights="distance"
+        ).set_output(transform="pandas")
+        pipeline_steps.append(imputer)
 
-    pipeline = make_pipeline(imputer, ct, rfc)
+    rfc = RandomForestClassifier(random_state=seed, class_weight=class_weight)
+    pipeline_steps.append(rfc)
+
+    pipeline = make_pipeline(*pipeline_steps)
+    mlb = MultiLabelBinarizer(classes=top_genres)
 
     X_train = train_data[FEATURE_COLS]
     y_train = mlb.fit_transform(train_data[LABEL_COL])
@@ -101,13 +112,14 @@ def train(
 
 @task
 def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
+    logger = get_run_logger()
     X_test = test_data[FEATURE_COLS]
     y_true = mlb.transform(test_data[LABEL_COL])
     y_pred = pipeline.predict(X_test)
     _jaccard_score = jaccard_score(y_true, y_pred, average="samples")
     _hamming_score = hamming_loss(y_true, y_pred)
-    print(f"jaccard score: {_jaccard_score:.4f}")
-    print(f"hamming loss: {_hamming_score:.4f}")
+    logger.info(f"jaccard score: {_jaccard_score:.4f}")
+    logger.info(f"hamming loss: {_hamming_score:.4f}")
 
 
 @flow(log_prints=True)
@@ -116,6 +128,10 @@ def train_flow(
     top_k_genres=50,
     valid_tempo_min: float = 70,
     valid_tempo_max: float = 180,
+    impute_missing_values: bool = True,
+    imputer_n_neighbors: int = 5,
+    class_weight: str | None = "balanced",
+    seed=42,
 ):
     train_data = read_data(data_path + "/train.parquet")
     val_data = read_data(data_path + "/val.parquet")
@@ -130,7 +146,14 @@ def train_flow(
     val_data = fix_outliers(val_data, valid_tempo_min, valid_tempo_max)
 
     # TODO: models for pipeline & mlb
-    trained_pipeline, mlb = train(train_data, top_genres)
+    trained_pipeline, mlb = train(
+        train_data,
+        top_genres,
+        impute_missing_values=impute_missing_values,
+        imputer_n_neighbors=imputer_n_neighbors,
+        class_weight=class_weight,
+        seed=seed,
+    )
     eval(val_data, trained_pipeline, mlb)
 
 
