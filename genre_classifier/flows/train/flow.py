@@ -1,5 +1,9 @@
 from prefect import flow, task, get_run_logger
-from genre_classifier.utils import read_parquet_data, get_file_uri
+from genre_classifier.utils import (
+    read_parquet_data,
+    get_file_uri,
+    set_aws_credential_env,
+)
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 from sklearn.compose import make_column_transformer
@@ -176,6 +180,8 @@ def train_flow(
     class_weight: str | None = "balanced",
     seed=42,
 ):
+    set_aws_credential_env()
+
     mlflow.set_tracking_uri("http://127.0.0.1:5000")
     mlflow.set_experiment(mlflow_experiment_name)
 

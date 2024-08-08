@@ -1,9 +1,18 @@
-from prefect_aws import S3Bucket
+from prefect_aws import S3Bucket, AwsCredentials
 import pandas as pd
 import tempfile
 from pathlib import Path
 
 from typing import Optional
+
+import os
+
+
+def set_aws_credential_env(credentials_block_name: str = "aws-creds"):
+    aws_credentials_block = AwsCredentials.load(credentials_block_name)
+    os.environ["AWS_ACCESS_KEY_ID"] = aws_credentials_block.aws_access_key_id
+    secret_access_key = aws_credentials_block.aws_secret_access_key.get_secret_value()
+    os.environ["AWS_SECRET_ACCESS_KEY"] = secret_access_key
 
 
 def get_file_uri(
