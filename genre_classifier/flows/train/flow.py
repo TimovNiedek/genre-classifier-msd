@@ -1,5 +1,5 @@
 from prefect import flow, task, get_run_logger
-from genre_classifier.utils import read_parquet_data
+from genre_classifier.utils import read_parquet_data, get_file_uri
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 from sklearn.compose import make_column_transformer
@@ -10,6 +10,12 @@ from sklearn.metrics import jaccard_score, hamming_loss
 import numpy as np
 import pandas as pd
 
+import mlflow
+import mlflow.data
+from tempfile import TemporaryDirectory
+
+from pathlib import Path
+
 
 FEATURE_COLS = ["duration", "key", "loudness", "mode", "tempo", "year"]
 NUMERICAL_COLS = ["duration", "loudness", "tempo", "year"]
@@ -19,8 +25,13 @@ LABEL_COL = "genres"
 
 
 @task
-def read_data(data_path: str) -> pd.DataFrame:
-    data = read_parquet_data(data_path, "million-songs-dataset-s3")
+def read_data(
+    data_path: str, bucket_block_name: str = "million-songs-dataset-s3"
+) -> pd.DataFrame:
+    data_uri = get_file_uri(data_path, bucket_block_name=bucket_block_name)
+    data = read_parquet_data(data_path, bucket_block_name)
+    dataset = mlflow.data.from_pandas(data, source=data_uri, name=Path(data_path).stem)
+    mlflow.log_input(dataset, context="training")
     return data
 
 
@@ -29,6 +40,12 @@ def get_top_genres(df: pd.DataFrame, k=50) -> list[str]:
     genre_counts = df["genres"].explode().value_counts()
     genre_names = list(genre_counts.index)
     top_genre_names = genre_names[:k]
+    with TemporaryDirectory() as tmpdir:
+        genres_file = Path(tmpdir) / "genres.txt"
+        with open(genres_file, "w") as f:
+            f.writelines(top_genre_names)
+
+        mlflow.log_artifact(genres_file)
     return top_genre_names
 
 
@@ -124,6 +141,8 @@ def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
 
 @flow(log_prints=True)
 def train_flow(
+    mlflow_experiment_name: str,
+    bucket_block_name: str = "million-songs-dataset-s3",
     data_path: str = "subset",
     top_k_genres=50,
     valid_tempo_min: float = 70,
@@ -133,8 +152,12 @@ def train_flow(
     class_weight: str | None = "balanced",
     seed=42,
 ):
-    train_data = read_data(data_path + "/train.parquet")
-    val_data = read_data(data_path + "/val.parquet")
+    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_experiment(mlflow_experiment_name)
+    mlflow.sklearn.autolog()
+
+    train_data = read_data(data_path + "/train.parquet", bucket_block_name)
+    val_data = read_data(data_path + "/val.parquet", bucket_block_name)
 
     top_genres = get_top_genres(train_data, k=top_k_genres)
     # TODO: artifact for top_genres
@@ -158,4 +181,4 @@ def train_flow(
 
 
 if __name__ == "__main__":
-    train_flow()
+    train_flow("dev")

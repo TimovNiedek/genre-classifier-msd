@@ -6,6 +6,13 @@ from pathlib import Path
 from typing import Optional
 
 
+def get_file_uri(
+    data_path: Path | str, bucket_block_name: str = "million-songs-dataset-s3"
+) -> str:
+    bucket = S3Bucket.load(bucket_block_name)
+    return f"s3://{bucket.bucket_name}/{data_path}"
+
+
 def upload_dir_to_s3(
     data_dir: Path | str,
     target_dir: Optional[Path | str],

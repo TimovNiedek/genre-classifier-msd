@@ -10,4 +10,5 @@ infra:
 	terraform apply -input=false tfplan
 
 deploy: Dockerfile genre_classifier deploy.py
+	poetry export -o requirements.txt
 	poetry run python deploy.py
