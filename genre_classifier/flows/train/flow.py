@@ -59,23 +59,25 @@ def fix_outliers(
     df: pd.DataFrame, valid_tempo_min: float = 70, valid_tempo_max: float = 180
 ) -> pd.DataFrame:
     logger = get_run_logger()
-    logger.info("Before fixing outliers:")
-    logger.info(df.describe())
+    logger.debug("Before fixing outliers:")
+    logger.debug(df.describe())
     df["year"] = df["year"].replace(0, np.nan)
     df.loc[df["tempo"] < valid_tempo_min / 2, "tempo"] = np.nan
     df.loc[df["tempo"] > valid_tempo_max * 2, "tempo"] = np.nan
     df.loc[df["tempo"] < valid_tempo_min, "tempo"] *= 2
     df.loc[df["tempo"] > valid_tempo_max, "tempo"] /= 2
-    logger.info("After fixing outliers:")
-    logger.info(df.describe())
+    logger.debug("After fixing outliers:")
+    logger.debug(df.describe())
     return df
 
 
 @task
 def train(
-    train_data, top_genres: list[str], seed=42
+    train_data: pd.DataFrame, top_genres: list[str], seed=42
 ) -> tuple[Pipeline, MultiLabelBinarizer]:
-    imputer = KNNImputer(n_neighbors=2, weights="distance")
+    imputer = KNNImputer(n_neighbors=2, weights="distance").set_output(
+        transform="pandas"
+    )
     mlb = MultiLabelBinarizer(classes=top_genres)
 
     ct = make_column_transformer(
@@ -91,6 +93,7 @@ def train(
 
     X_train = train_data[FEATURE_COLS]
     y_train = mlb.fit_transform(train_data[LABEL_COL])
+
     pipeline = pipeline.fit(X_train, y_train)
     return pipeline, mlb
 
@@ -113,7 +116,7 @@ def train_flow(
     val_data = filter_top_genres(val_data, top_genres)
     val_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
 
-    train(train_data, top_genres)
+    trained_pipeline, label_binarizer = train(train_data, top_genres)
 
 
 if __name__ == "__main__":
