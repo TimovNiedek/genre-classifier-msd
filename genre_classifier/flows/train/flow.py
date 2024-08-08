@@ -1,8 +1,20 @@
 from prefect import flow, task, get_run_logger
 from genre_classifier.utils import read_parquet_data
+from sklearn.impute import KNNImputer
+from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
+from sklearn.compose import make_column_transformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import make_pipeline, Pipeline
 
 import numpy as np
 import pandas as pd
+
+
+FEATURE_COLS = ["duration", "key", "loudness", "mode", "tempo", "year"]
+NUMERICAL_COLS = ["duration", "loudness", "tempo", "year"]
+BINARY_COLS = ["mode"]
+CATEGORICAL_COLS = ["key"]
+LABEL_COL = "genres"
 
 
 @task
@@ -59,6 +71,30 @@ def fix_outliers(
     return df
 
 
+@task
+def train(
+    train_data, top_genres: list[str], seed=42
+) -> tuple[Pipeline, MultiLabelBinarizer]:
+    imputer = KNNImputer(n_neighbors=2, weights="distance")
+    mlb = MultiLabelBinarizer(classes=top_genres)
+
+    ct = make_column_transformer(
+        (MinMaxScaler(clip=True), NUMERICAL_COLS),
+        # (OneHotEncoder(), CATEGORICAL_COLS),
+        ("passthrough", BINARY_COLS),
+        remainder="drop",
+    )
+
+    rfc = RandomForestClassifier(random_state=seed, class_weight="balanced")
+
+    pipeline = make_pipeline(imputer, ct, rfc)
+
+    X_train = train_data[FEATURE_COLS]
+    y_train = mlb.fit_transform(train_data[LABEL_COL])
+    pipeline = pipeline.fit(X_train, y_train)
+    return pipeline, mlb
+
+
 @flow(log_prints=True)
 def train_flow(
     data_path: str = "subset",
@@ -69,12 +105,15 @@ def train_flow(
     train_data = read_data(data_path + "/train.parquet")
     val_data = read_data(data_path + "/val.parquet")
     top_genres = get_top_genres(train_data, k=top_k_genres)
+    # TODO: artifact for top_genres
 
     train_data = filter_top_genres(train_data, top_genres)
     train_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
 
     val_data = filter_top_genres(val_data, top_genres)
     val_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
+
+    train(train_data, top_genres)
 
 
 if __name__ == "__main__":
