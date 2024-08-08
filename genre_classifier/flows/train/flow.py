@@ -5,6 +5,7 @@ from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 from sklearn.compose import make_column_transformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.metrics import jaccard_score, hamming_loss
 
 import numpy as np
 import pandas as pd
@@ -98,6 +99,17 @@ def train(
     return pipeline, mlb
 
 
+@task
+def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
+    X_test = test_data[FEATURE_COLS]
+    y_true = mlb.transform(test_data[LABEL_COL])
+    y_pred = pipeline.predict(X_test)
+    _jaccard_score = jaccard_score(y_true, y_pred, average="samples")
+    _hamming_score = hamming_loss(y_true, y_pred)
+    print(f"jaccard score: {_jaccard_score:.4f}")
+    print(f"hamming loss: {_hamming_score:.4f}")
+
+
 @flow(log_prints=True)
 def train_flow(
     data_path: str = "subset",
@@ -107,6 +119,7 @@ def train_flow(
 ):
     train_data = read_data(data_path + "/train.parquet")
     val_data = read_data(data_path + "/val.parquet")
+
     top_genres = get_top_genres(train_data, k=top_k_genres)
     # TODO: artifact for top_genres
 
@@ -114,9 +127,11 @@ def train_flow(
     train_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
 
     val_data = filter_top_genres(val_data, top_genres)
-    val_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
+    val_data = fix_outliers(val_data, valid_tempo_min, valid_tempo_max)
 
-    trained_pipeline, label_binarizer = train(train_data, top_genres)
+    # TODO: models for pipeline & mlb
+    trained_pipeline, mlb = train(train_data, top_genres)
+    eval(val_data, trained_pipeline, mlb)
 
 
 if __name__ == "__main__":
