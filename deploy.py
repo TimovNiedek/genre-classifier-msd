@@ -11,12 +11,15 @@ from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
 from genre_classifier.flows.train.flow import train_flow
 
+import time
+
 
 VERSION = "v0"
 
 
 if __name__ == "__main__":
     create_aws_creds_block()
+    time.sleep(0.5)  # creating the block is async, but required for the s3 bucket
     create_s3_buckets()
 
     deploy(
