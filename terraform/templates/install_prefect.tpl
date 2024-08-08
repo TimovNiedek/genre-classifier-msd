@@ -26,7 +26,7 @@ usermod -aG docker $USER
 
 aws --version
 
-pip install -U prefect prefect-aws prefect-docker
+pip install -U prefect prefect-aws prefect-docker mlflow boto3 psycopg2-binary
 prefect version
 
 # Create a service file for Prefect Server and start & enable it
@@ -49,3 +49,8 @@ prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
 echo "${work_pool_service}" > /etc/systemd/system/prefect-work-pool.service
 systemctl start prefect-work-pool
 systemctl enable prefect-work-pool
+
+# Create a service file for the mlflow server and start & enable it
+echo "${mlflow_server_service}" > /etc/systemd/system/mlflow-server.service
+systemctl start mlflow-server
+systemctl enable mlflow-server
