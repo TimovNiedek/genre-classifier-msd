@@ -103,7 +103,6 @@ def train(
 
     ct = make_column_transformer(
         (MinMaxScaler(clip=True), NUMERICAL_COLS),
-        # (OneHotEncoder(), CATEGORICAL_COLS),
         ("passthrough", BINARY_COLS),
         remainder="drop",
     )
