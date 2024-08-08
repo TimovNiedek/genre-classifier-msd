@@ -6,6 +6,7 @@ from sklearn.compose import make_column_transformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.metrics import jaccard_score, hamming_loss
+from mlflow.models import infer_signature
 
 import numpy as np
 import pandas as pd
@@ -43,7 +44,7 @@ def get_top_genres(df: pd.DataFrame, k=50) -> list[str]:
     with TemporaryDirectory() as tmpdir:
         genres_file = Path(tmpdir) / "genres.txt"
         with open(genres_file, "w") as f:
-            f.writelines(top_genre_names)
+            f.write("\n".join(top_genre_names))
 
         mlflow.log_artifact(genres_file)
     return top_genre_names
@@ -124,6 +125,23 @@ def train(
     y_train = mlb.fit_transform(train_data[LABEL_COL])
 
     pipeline = pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_train)
+
+    _jaccard_score = jaccard_score(y_train, y_pred, average="samples")
+    _hamming_loss = hamming_loss(y_train, y_pred)
+
+    mlflow.sklearn.log_model(
+        pipeline, "model", signature=infer_signature(X_train, y_pred)
+    )
+    mlflow.sklearn.log_model(
+        mlb,
+        "multi_label_binarizer",
+        signature=infer_signature(train_data[LABEL_COL], y_train),
+    )
+
+    mlflow.log_metric("jaccard_score_train", _jaccard_score)
+    mlflow.log_metric("hamming_loss_val", _hamming_loss)
+
     return pipeline, mlb
 
 
@@ -134,9 +152,16 @@ def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
     y_true = mlb.transform(test_data[LABEL_COL])
     y_pred = pipeline.predict(X_test)
     _jaccard_score = jaccard_score(y_true, y_pred, average="samples")
-    _hamming_score = hamming_loss(y_true, y_pred)
+    _hamming_loss = hamming_loss(y_true, y_pred)
     logger.info(f"jaccard score: {_jaccard_score:.4f}")
-    logger.info(f"hamming loss: {_hamming_score:.4f}")
+    logger.info(f"hamming loss: {_hamming_loss:.4f}")
+
+    mlflow.log_metric("jaccard_score_val", _jaccard_score)
+    mlflow.log_metric("hamming_loss_val", _hamming_loss)
+
+
+def log_params(**kwargs):
+    mlflow.log_params(kwargs)
 
 
 @flow(log_prints=True)
@@ -154,13 +179,21 @@ def train_flow(
 ):
     mlflow.set_tracking_uri("http://127.0.0.1:5000")
     mlflow.set_experiment(mlflow_experiment_name)
-    mlflow.sklearn.autolog()
+
+    log_params(
+        top_k_genres=top_k_genres,
+        valid_tempo_min=valid_tempo_min,
+        valid_tempo_max=valid_tempo_max,
+        impute_missing_values=impute_missing_values,
+        imputer_n_neighbors=imputer_n_neighbors,
+        class_weight=class_weight,
+        seed=seed,
+    )
 
     train_data = read_data(data_path + "/train.parquet", bucket_block_name)
     val_data = read_data(data_path + "/val.parquet", bucket_block_name)
 
     top_genres = get_top_genres(train_data, k=top_k_genres)
-    # TODO: artifact for top_genres
 
     train_data = filter_top_genres(train_data, top_genres)
     train_data = fix_outliers(train_data, valid_tempo_min, valid_tempo_max)
@@ -168,7 +201,6 @@ def train_flow(
     val_data = filter_top_genres(val_data, top_genres)
     val_data = fix_outliers(val_data, valid_tempo_min, valid_tempo_max)
 
-    # TODO: models for pipeline & mlb
     trained_pipeline, mlb = train(
         train_data,
         top_genres,
@@ -177,6 +209,7 @@ def train_flow(
         class_weight=class_weight,
         seed=seed,
     )
+
     eval(val_data, trained_pipeline, mlb)
 
 

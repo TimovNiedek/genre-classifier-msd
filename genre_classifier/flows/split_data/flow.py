@@ -16,6 +16,8 @@ def read_data(data_path: str) -> pd.DataFrame:
 def split_train_val_test(
     df: pd.DataFrame, val_size, test_size, seed: int = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    # TODO: split by year to simulate fresh track releases
+
     train_data, val_test_data = train_test_split(
         df, test_size=val_size + test_size, random_state=seed
     )
