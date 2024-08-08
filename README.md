@@ -29,8 +29,8 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 
 ## To-Do's
 
-* [ ] Add makefile
-    * [ ] Deploy training pipeline
+* [x] Add makefile
+    * [x] Deploy training pipeline
     * [ ] Execute training pipeline
     * [ ] Test flow steps
 * [ ] Add unit tests
