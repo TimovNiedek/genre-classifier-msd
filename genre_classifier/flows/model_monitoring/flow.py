@@ -92,7 +92,9 @@ def validate_model_performance(report: Report) -> bool:
 
 
 @flow
-def model_monitoring_flow(bucket_block_name="million-songs-dataset-s3") -> bool:
+def model_monitoring_flow(
+    bucket_block_name="million-songs-dataset-s3", trigger_retrain_if_needed=True
+) -> bool:
     logger = get_run_logger()
     reference = get_reference_data(bucket_block_name=bucket_block_name)
     ground_truth = get_ground_truth_data(bucket_block_name=bucket_block_name)
@@ -104,8 +106,9 @@ def model_monitoring_flow(bucket_block_name="million-songs-dataset-s3") -> bool:
         logger.info("Model should be retrained!")
         report_url = get_file_uri("subset/metrics_report.html", bucket_block_name)
         logger.info(f"Full report available at {report_url}")
-        logger.info("Triggering complete training run")
-        complete_training_flow(mlflow_experiment_name="automatic-retraining")
+        if trigger_retrain_if_needed:
+            logger.info("Triggering complete training run")
+            complete_training_flow(mlflow_experiment_name="automatic-retraining")
     else:
         logger.info("No retrain required")
     return retrain_needed
