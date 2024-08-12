@@ -69,7 +69,7 @@ def split_data_flow(
     test_size: float = 0.1,
     seed: int | None = 42,
     new_releases_start_date: datetime.date = datetime.date.today(),
-    num_releases_per_day: int = 10,
+    num_releases_per_day: int = 100,
 ):
     full_data = read_data(source_data_path)
     train_val_set, test_set = split_by_release_year(full_data, test_size=test_size)
