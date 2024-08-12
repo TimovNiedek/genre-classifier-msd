@@ -34,11 +34,32 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 To install the dependencies locally, run `make init`. This simply instructs poetry to use python 3.12 and installs packages from the poetry.lock file.
 If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
 
-## Deploy & run
+## Deploy
 
 Update the `name` value inside the `DeploymentImage` at [deploy.py](./deploy.py) to point to your public repository. Otherwise you will not be able to build the image & pull it from the Prefect server.
 
 To deploy the training & inference code, run `make deploy`. This will connect to the Prefect server, create the required AWS blocks, build the Docker container and deploy the Prefect flows.
+
+If everything is successful, you should see the following output:
+
+```
+Successfully created/updated all deployments!
+
+                             Deployments
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+┃ Name                                           ┃ Status  ┃ Details ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+│ ingest-flow/genre-classifier-ingest-v0         │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
+│ preprocess-flow/genre-classifier-preprocess-v0 │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
+│ split-data-flow/genre-classifier-split-data-v0 │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
+│ train-flow/genre-classifier-train-v0           │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
+│ predict-flow/genre-classifier-predict-v0       │ applied │         │
+└────────────────────────────────────────────────┴─────────┴─────────┘
+```
 
 ## To-Do's
 
