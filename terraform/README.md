@@ -46,8 +46,11 @@ aws_access_key_secret = "..." # AWS_SECRET_ACCESS_KEY
 
 ## Setup
 
-1. Run `terraform init` to initialize the terraform environment.
-2. Run `terraform apply -var-file=variables.tfvars` to create the resources.
+To create the infrastructure run `make infra` from the root directory.
+
+## Destroy
+
+To destroy the infrastructure, run `make destroy` from the root directory.
 
 ## Additional notes
 

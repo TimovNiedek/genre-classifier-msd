@@ -7,6 +7,7 @@
 * [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 * AWS account
 * AWS credentials should be available in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, following the [AWS Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-build) instructions.
+* Poetry should be installed, following the [installation instructions](https://python-poetry.org/docs/#installation).
 
 ### Set up infrastructure
 
@@ -26,6 +27,15 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 3. After a couple of minutes should be able to access the Prefect UI through http://localhost:4200/dashboard.
 4. Run `pipenv run prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"` before executing flows.
 5. Set the default work pool to the docker work pool: `prefect config set PREFECT_DEFAULT_WORK_POOL_NAME=docker-work-pool`
+
+### Initialize local environment
+
+To install the dependencies locally, run `make init`. This simply instructs poetry to use python 3.12 and installs packages from the poetry.lock file.
+If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
+
+## Deploy & run
+
+To deploy the training & inference code, run `make deploy`. This will connect to the Prefect server, create the required AWS blocks, build the Docker container and deploy the Prefect flows.
 
 ## To-Do's
 

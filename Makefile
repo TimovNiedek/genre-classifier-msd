@@ -18,3 +18,7 @@ deploy: Dockerfile genre_classifier deploy.py
 	poetry run python genre_classifier/blocks/create_aws_credentials.py
 	poetry run python genre_classifier/blocks/create_s3_buckets.py
 	poetry run python deploy.py
+
+destroy:
+	cd terraform; \
+	terraform destroy -var-file variables.tfvars -input=false
