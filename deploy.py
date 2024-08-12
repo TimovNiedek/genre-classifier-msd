@@ -20,7 +20,9 @@ if __name__ == "__main__":
         split_data_flow.to_deployment(name=f"genre-classifier-split-data-{VERSION}"),
         train_flow.to_deployment(name=f"genre-classifier-train-{VERSION}"),
         predict_flow.to_deployment(
-            name=f"genre-classifier-predict-{VERSION}", cron="* * * * *"
+            # Execute a prediction every 5 minutes, in a real use-case this would be executed at the end of every day
+            name=f"genre-classifier-predict-{VERSION}",
+            cron="0/5 * * * *",
         ),
         work_pool_name="docker-work-pool",
         image=DeploymentImage(
