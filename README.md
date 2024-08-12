@@ -8,6 +8,7 @@
 * AWS account
 * AWS credentials should be available in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, following the [AWS Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-build) instructions.
 * Poetry should be installed, following the [installation instructions](https://python-poetry.org/docs/#installation).
+* An account on [docker hub](https://hub.docker.com/) - this can be created for free if you do not have one yet. Create a public repository, for example `yourusername/genre-classifier-train`. This is necessary to be able to deploy the flow by building a docker image and pulling it on the Prefect server.
 
 ### Set up infrastructure
 
@@ -34,6 +35,8 @@ To install the dependencies locally, run `make init`. This simply instructs poet
 If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
 
 ## Deploy & run
+
+Update the `name` value inside the `DeploymentImage` at [deploy.py](./deploy.py) to point to your public repository. Otherwise you will not be able to build the image & pull it from the Prefect server.
 
 To deploy the training & inference code, run `make deploy`. This will connect to the Prefect server, create the required AWS blocks, build the Docker container and deploy the Prefect flows.
 

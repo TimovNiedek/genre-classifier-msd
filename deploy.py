@@ -26,7 +26,7 @@ if __name__ == "__main__":
         ),
         work_pool_name="docker-work-pool",
         image=DeploymentImage(
-            name="timovanniedek/genre-classifier-train",
+            name="timovanniedek/genre-classifier-train",  # Change to your own repository on Docker Hub (must be public)
             tag=slugify(VERSION + "-" + pendulum.now().isoformat()),
             dockerfile="Dockerfile",
         ),
