@@ -183,7 +183,7 @@ def eval(
                 "env": "production"
             },
         )
-        logger.info(f"Registered classifier with version {new_version}")
+        logger.info(f"Registered classifier with version {new_version.version}")
 
         new_version = mlflow.register_model(
             f"runs:/{run.info.run_id}/multi_label_binarizer",
@@ -193,7 +193,9 @@ def eval(
                 "env": "production"
             },
         )
-        logger.info(f"Registered MultiLabelBinarizer with version {new_version}")
+        logger.info(
+            f"Registered MultiLabelBinarizer with version {new_version.version}"
+        )
         return True
     else:
         logger.info(
