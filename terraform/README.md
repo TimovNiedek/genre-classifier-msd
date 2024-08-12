@@ -22,12 +22,26 @@ ssh-keygen -P "" -t rsa -b 4096 -m pem -f dev_key
 cat dev_key.pub
 ```
 
+### AWS authentication
+
+Create an access key via the AWS console at [IAM > Security Credentials](https://us-east-1.console.aws.amazon.com/iam/home#/security_credentials).
+Export these in your environment with:
+
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+```
+
+Also add them to the `variables.tfvars` file as described below.
+
 ### `variables.tfvars`
 
 Create a file named `variables.tfvars` in the `terraform` directory with the following content:
 
 ```hcl
-dev_ssh_public_key = "ssh-rsa AAAAB3NzaC1y..."  # your public key
+dev_ssh_public_key    = "ssh-rsa AAAAB3NzaC1y..."  # your public key
+aws_access_key_id     = "..."  # AWS_ACCESS_KEY_ID
+aws_access_key_secret = "..." # AWS_SECRET_ACCESS_KEY
 ```
 
 ## Setup
