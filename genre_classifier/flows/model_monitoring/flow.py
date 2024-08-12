@@ -1,5 +1,6 @@
 import pandas as pd
 from genre_classifier.utils import read_parquet_data, upload_file_to_s3, get_file_uri
+from genre_classifier.flows.complete_training.flow import complete_training_flow
 from prefect import task, flow, get_run_logger
 from prefect_aws import S3Bucket
 import datetime
@@ -103,6 +104,8 @@ def model_monitoring_flow(bucket_block_name="million-songs-dataset-s3") -> bool:
         logger.info("Model should be retrained!")
         report_url = get_file_uri("subset/metrics_report.html", bucket_block_name)
         logger.info(f"Full report available at {report_url}")
+        logger.info("Triggering complete training run")
+        complete_training_flow(mlflow_experiment_name="automatic-retraining")
     else:
         logger.info("No retrain required")
     return retrain_needed
