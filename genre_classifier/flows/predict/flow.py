@@ -1,19 +1,26 @@
 from prefect import flow, task, get_run_logger
 
 from prefect_aws import S3Bucket
+
 import pandas as pd
 
 from mlflow.client import MlflowClient
 import mlflow
 
-from genre_classifier.utils import read_parquet_data, write_parquet_data
+from genre_classifier.utils import (
+    read_parquet_data,
+    write_parquet_data,
+    set_aws_credential_env,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
 @task
 def fetch_model(registered_model_name: str, env="production"):
+    set_aws_credential_env("aws-creds")
     client = MlflowClient("http://127.0.0.1:5000")
+
     model = client.get_registered_model(registered_model_name)
     model_version = [
         model for model in model.latest_versions if model.tags.get("env") == env
