@@ -26,12 +26,14 @@ ANALYSIS_FEATURE_NAMES = [
 MUSICBRAINZ_FEATURE_NAMES = ["year"]
 
 
-bucket = S3Bucket.load("million-songs-dataset-s3")
-
-
 @task
-def list_file_paths(bucket_folder: str, n: Optional[int] = None) -> list[str]:
+def list_file_paths(
+    bucket_folder: str,
+    n: Optional[int] = None,
+    bucket_block_name: str = "million-songs-dataset-s3",
+) -> list[str]:
     logger = get_run_logger()
+    bucket = S3Bucket.load(bucket_block_name)
     objects = bucket.list_objects(folder=bucket_folder)
     object_keys = [obj["Key"] for obj in objects if obj["Key"].endswith(".h5")]
     logger.info(f"Found {len(object_keys)} objects")
@@ -93,7 +95,12 @@ class SongMetadata(BaseModel):
     genres: list[str]
 
 
-def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> SongMetadata:
+def get_song_metadata(
+    h5_path: str,
+    genre_filter: list[str] = [],
+    bucket_block_name: str = "million-songs-dataset-s3",
+) -> SongMetadata:
+    bucket = S3Bucket.load(bucket_block_name)
     with BytesIO() as buf:
         bucket.download_object_to_file_object(h5_path, buf)
 
@@ -111,8 +118,10 @@ def get_song_metadata(h5_path: str, genre_filter: list[str] = []) -> SongMetadat
 def write_features(
     song_metadata: list[SongMetadata],
     target_path: str = "subset/MillionSongSubset/subset.parquet",
+    bucket_block_name: str = "million-songs-dataset-s3",
 ):
     logger = get_run_logger()
+    bucket = S3Bucket.load(bucket_block_name)
     df = pd.DataFrame([dict(song) for song in song_metadata])
     logger.info(df.head())
 
@@ -123,11 +132,15 @@ def write_features(
 
 @task
 def get_song_metadata_list(
-    h5_paths: str, genre_filter: list[str] = []
+    h5_paths: str,
+    genre_filter: list[str] = [],
+    bucket_block_name: str = "million-songs-dataset-s3",
 ) -> list[SongMetadata]:
     song_metas = []
     for h5_path in h5_paths:
-        song_metadata = get_song_metadata(h5_path, genre_filter=genre_filter)
+        song_metadata = get_song_metadata(
+            h5_path, genre_filter=genre_filter, bucket_block_name=bucket_block_name
+        )
         song_metas.append(song_metadata)
     return song_metas
 
@@ -136,15 +149,21 @@ def get_song_metadata_list(
 def preprocess_flow(
     bucket_folder: str = "subset/MillionSongSubset",
     target_path: str = "subset/MillionSongSubset/subset.parquet",
+    s3_bucket_block_name: str = "million-songs-dataset-s3",
     genres_url: str = DEFAULT_GENRES_URL,
-    limit: Optional[int] = 10,
-):
+    limit: Optional[int] = None,
+) -> str:
     logger = get_run_logger()
-    paths = list_file_paths.submit(bucket_folder, limit)
+    paths = list_file_paths.submit(bucket_folder, limit, s3_bucket_block_name)
     genre_filter = get_genres_list.submit(genres_url)
-    song_metas = get_song_metadata_list(paths, genre_filter)
+    song_metas = get_song_metadata_list(
+        paths, genre_filter, bucket_block_name=s3_bucket_block_name
+    )
     logger.info(f"Extracted metadata for {len(song_metas)} songs")
-    write_features(song_metas, target_path=target_path)
+    write_features(
+        song_metas, target_path=target_path, bucket_block_name=s3_bucket_block_name
+    )
+    return target_path
 
 
 if __name__ == "__main__":
