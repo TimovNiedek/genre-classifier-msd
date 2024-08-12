@@ -149,7 +149,14 @@ def train(
 
 
 @task
-def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
+def eval(
+    test_data: pd.DataFrame,
+    pipeline: Pipeline,
+    mlb: MultiLabelBinarizer,
+    register_model_if_accepted: bool,
+    min_jaccard_score: float,
+    max_hamming_loss: float,
+) -> bool:
     logger = get_run_logger()
     X_test = test_data[FEATURE_COLS]
     y_true = mlb.transform(test_data[LABEL_COL])
@@ -161,6 +168,38 @@ def eval(test_data: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer):
 
     mlflow.log_metric("jaccard_score_val", _jaccard_score)
     mlflow.log_metric("hamming_loss_val", _hamming_loss)
+
+    if not register_model_if_accepted:
+        return False
+    elif _jaccard_score >= min_jaccard_score and _hamming_loss <= max_hamming_loss:
+        logger.info("Model evaluation criteria were met, registering model.")
+        run = mlflow.active_run()
+
+        new_version = mlflow.register_model(
+            f"runs:/{run.info.run_id}/model",
+            "genre-classifier-random-forest",
+            tags={
+                # In reality we'd do additional (possibly manual) checks before promoting to production
+                "env": "production"
+            },
+        )
+        logger.info(f"Registered classifier with version {new_version}")
+
+        new_version = mlflow.register_model(
+            f"runs:/{run.info.run_id}/multi_label_binarizer",
+            "genre-classifier-multi-label-binarizer",
+            tags={
+                # In reality we'd do additional (possibly manual) checks before promoting to production
+                "env": "production"
+            },
+        )
+        logger.info(f"Registered MultiLabelBinarizer with version {new_version}")
+        return True
+    else:
+        logger.info(
+            "Model evaluation criteria were NOT met. Model will not be registered."
+        )
+    return False
 
 
 def log_params(**kwargs):
@@ -179,6 +218,9 @@ def train_flow(
     imputer_n_neighbors: int = 5,
     class_weight: str | None = "balanced",
     seed=42,
+    register_model_if_accepted: bool = False,
+    min_jaccard_score: float = 0.17,
+    max_hamming_loss: float = 0.18,
 ):
     set_aws_credential_env()
 
@@ -215,7 +257,14 @@ def train_flow(
         seed=seed,
     )
 
-    eval(val_data, trained_pipeline, mlb)
+    eval(
+        val_data,
+        trained_pipeline,
+        mlb,
+        register_model_if_accepted=register_model_if_accepted,
+        min_jaccard_score=min_jaccard_score,
+        max_hamming_loss=max_hamming_loss,
+    )
 
 
 if __name__ == "__main__":
