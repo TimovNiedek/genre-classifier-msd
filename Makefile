@@ -15,4 +15,6 @@ deploy: Dockerfile genre_classifier deploy.py
 		echo "Uncommitted changes detected. Please commit or stash your changes."; \
 		exit 1; \
 	fi
+	poetry run python genre_classifier/blocks/create_aws_credentials.py
+	poetry run python genre_classifier/blocks/create_s3_buckets.py
 	poetry run python deploy.py

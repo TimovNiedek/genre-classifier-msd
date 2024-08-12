@@ -31,16 +31,16 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 
 * [x] Add makefile
     * [x] Deploy training pipeline
-    * [ ] Execute training pipeline
+    * [x] Execute training pipeline
     * [ ] Test flow steps
 * [ ] Add unit tests
 * [ ] Add integration tests
 * [ ] Add CI / CD
-* [ ] Add mlflow server to IaC
+* [x] Add mlflow server to IaC
 * [ ] Add observability tooling
-* [ ] Add experiment tracking
-* [ ] Design deployment method (batch / streaming)
-    * [ ] Mock new incoming data
-* [ ] Containerize & deploy model
-* [ ] Ensure dependency versions are specified
+* [x] Add experiment tracking
+* [x] Design deployment method (batch / streaming)
+    * [x] Mock new incoming data
+* [x] Containerize & deploy model
+* [x] Ensure dependency versions are specified
 * [ ] Experiment with better model architectures
