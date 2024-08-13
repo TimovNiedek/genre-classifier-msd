@@ -13,7 +13,7 @@ import h5py
 from io import BytesIO
 
 
-DEFAULT_GENRES_URL = "https://gist.githubusercontent.com/andytlr/4104c667a62d8145aa3a/raw/2d044152bcacf98d401b71df2cb67fade8e490c9/spotify-genres.md"
+DEFAULT_GENRES_URL = "https://gist.githubusercontent.com/TimovNiedek/0530d9bc36aa3b3e83df4714c9a68c86/raw/5c7d92f81ed2f78ea949238c7563af0626d43b7d/spotify-genres.txt"
 ANALYSIS_FEATURE_NAMES = [
     "danceability",
     "duration",
@@ -54,8 +54,8 @@ def get_genres_list(url: str = DEFAULT_GENRES_URL) -> list[str]:
         genre_lines = f.read().decode().split("\n")
 
     genres_list = []
-    for line in genre_lines[4:]:
-        genre = line.strip()[3:]
+    for line in genre_lines:
+        genre = line.strip()
         genres_list.append(normalize_genre(genre))
 
     logger.info(f"Got {len(genres_list)} genres")
@@ -153,6 +153,18 @@ def preprocess_flow(
     genres_url: str = DEFAULT_GENRES_URL,
     limit: Optional[int] = None,
 ) -> str:
+    """Preprocess the Million Song Dataset.
+
+    Args:
+        bucket_folder (str): The folder in the S3 bucket where the dataset is stored.
+        target_path (str): The path where the preprocessed data will be stored.
+        s3_bucket_block_name (str): The name of the S3 bucket block in Prefect.
+        genres_url (str): The URL to the list of genres.
+        limit (int): The number of songs to process.
+
+    Returns:
+        str: The path to the preprocessed data relative to the S3 bucket.
+    """
     logger = get_run_logger()
     paths = list_file_paths.submit(bucket_folder, limit, s3_bucket_block_name)
     genre_filter = get_genres_list.submit(genres_url)

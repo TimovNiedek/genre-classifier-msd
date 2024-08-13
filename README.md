@@ -23,11 +23,11 @@ The task is a multi-class, multi-label classification task, i.e. for any track, 
 There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
 
 1. `ingest_data`:
-    * load the Million Song Dataset, using the subset to keep the dataset size managable.
+    * load the Million Song Dataset, using the subset to keep the dataset size manageable.
     * extract the .h5 files, one per individual track.
     * upload to an S3 bucket
 2. `preprocess`:
-    * Extract the relevant metadata from the individual
+    * Extract the relevant metadata from the individual track files.
 
 ## Getting started
 
@@ -45,6 +45,7 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
 * AWS account
 * AWS credentials should be available in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, following the [AWS Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-build) instructions.
 * Poetry should be installed, following the [installation instructions](https://python-poetry.org/docs/#installation).
+* Docker
 * An account on [docker hub](https://hub.docker.com/) - this can be created for free if you do not have one yet. Create a public repository, for example `yourusername/genre-classifier-train`. This is necessary to be able to deploy the flow by building a docker image and pulling it on the Prefect server.
 
 ### Set up infrastructure
@@ -54,7 +55,6 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
 ### Initialize local environment
 
 To install the dependencies locally, run `make init`. This simply instructs poetry to use python 3.12 and installs packages from the poetry.lock file.
-If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
 
 ### Connecting to Prefect & MLflow
 
