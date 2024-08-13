@@ -50,7 +50,8 @@ terraform {
 
 ## Setup
 
-To create the infrastructure run `make infra` from the root directory.
+To create the infrastructure run `make infra` from the root directory. While the command will exit after the infrastructure is created,
+the Prefect server will take around 5-10 minutes to start up.
 
 ## Destroy
 

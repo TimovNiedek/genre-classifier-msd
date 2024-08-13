@@ -51,7 +51,12 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
 
 Follow the instructions at [terraform/README.md](terraform/README.md) to set up the infrastructure using Terraform.
 
-### Connecting to Prefect
+### Initialize local environment
+
+To install the dependencies locally, run `make init`. This simply instructs poetry to use python 3.12 and installs packages from the poetry.lock file.
+If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
+
+### Connecting to Prefect & MLflow
 
 1. Update ~/.ssh/config with the following content:
     ```ssh-config
@@ -61,15 +66,11 @@ Follow the instructions at [terraform/README.md](terraform/README.md) to set up 
         IdentityFile ~/.ssh/dev_key
         StrictHostKeyChecking no
     ```
-2. Port forward the prefect server to your local machine by running `ssh -N -L 4200:localhost:4200 prefect-zoomcamp`.
-3. After a couple of minutes should be able to access the Prefect UI through http://localhost:4200/dashboard.
-4. Run `pipenv run prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"` before executing flows.
-5. Set the default work pool to the docker work pool: `prefect config set PREFECT_DEFAULT_WORK_POOL_NAME=docker-work-pool`
+2. Port forward the Prefect & MLflow server to your local machine by running `ssh -N -L 4200:localhost:4200 -L 5000:localhost:5000 prefect-zoomcamp`.
+3. You should be able to access the Prefect UI through http://localhost:4200/dashboard, and the MLflow UI through http://localhost:5000.
+4. Run `poetry run prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"` before executing flows.
+5. Set the default work pool to the docker work pool: `poetry run prefect config set PREFECT_DEFAULT_WORK_POOL_NAME=docker-work-pool`
 
-### Initialize local environment
-
-To install the dependencies locally, run `make init`. This simply instructs poetry to use python 3.12 and installs packages from the poetry.lock file.
-If you prefer to use a different environment manager, you can install from `requirements.txt` directly.
 
 ## Deploy
 

@@ -11,7 +11,7 @@ infra:
 	echo "aws_access_key_secret = \"$(AWS_SECRET_ACCESS_KEY)\"" >> variables.tfvars; \
 	terraform refresh -var-file variables.tfvars; \
 	terraform plan -out=tfplan -input=false -var-file=variables.tfvars; \
-	terraform apply -input=false tfplan
+	terraform apply tfplan
 
 deploy: Dockerfile genre_classifier deploy.py
 	poetry export -o requirements.txt
