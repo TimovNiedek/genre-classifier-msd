@@ -32,7 +32,7 @@ destroy:
 	terraform destroy -var-file variables.tfvars -input=false
 
 test:
-	poetry run pytest tests/unit
+	poetry run pytest -s tests/unit
 
 integration_test:
-	poetry run pytest tests/integration
+	poetry run pytest -s tests/integration

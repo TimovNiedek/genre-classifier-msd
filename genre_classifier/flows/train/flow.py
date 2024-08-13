@@ -208,6 +208,7 @@ def log_params(**kwargs):
 @flow(log_prints=True)
 def train_flow(
     mlflow_experiment_name: str,
+    mlflow_tracking_uri: str = "http://127.0.0.1:5000",
     bucket_block_name: str = "million-songs-dataset-s3",
     data_path: str = "subset",
     top_k_genres=50,
@@ -223,7 +224,7 @@ def train_flow(
 ):
     set_aws_credential_env()
 
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment(mlflow_experiment_name)
 
     log_params(

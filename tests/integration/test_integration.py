@@ -14,7 +14,9 @@ from genre_classifier.utils import read_parquet_data
 
 from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
+from genre_classifier.flows.train.flow import train_flow
 import asyncio
+import mlflow
 
 import datetime
 
@@ -39,8 +41,20 @@ def s3_client():
     response = _client.list_objects(
         Bucket="million-songs-dataset-cicd", Prefix=str(s3_base_directory)
     )
+    if "Contents" not in response:
+        return
     for track in response["Contents"]:
         _client.delete_object(Bucket="million-songs-dataset-cicd", Key=track["Key"])
+
+
+@pytest.fixture(scope="session")
+def mlflow_server():
+    os.system(
+        "docker run -d -p 5000:5000 --name mlflow-server ghcr.io/mlflow/mlflow mlflow server --host 0.0.0.0 --port 5000"
+    )
+    yield
+    os.system("docker stop mlflow-server")
+    os.system("docker rm mlflow-server")
 
 
 @pytest.fixture(scope="session")
@@ -134,7 +148,7 @@ def test_split_data_flow(s3_client):
         assert "Contents" in response
         assert len(response["Contents"]) == 1
 
-    # Read the data againx
+    # Read the data again
     train_df: pd.DataFrame = read_parquet_data(
         train_data_path, bucket_block_name="million-songs-dataset-s3-cicd"
     )
@@ -156,3 +170,13 @@ def test_split_data_flow(s3_client):
     )
     assert "Contents" in response
     assert len(response["Contents"]) == 2
+
+
+def test_train(mlflow_server):
+    mlflow.set_tracking_uri("http://0.0.0.0:5000")
+    train_flow(
+        mlflow_experiment_name="integration-test",
+        mlflow_tracking_uri="http://0.0.0.0:5000",
+        bucket_block_name="million-songs-dataset-s3-cicd",
+        data_path=str(s3_base_directory / "subset" / "splits"),
+    )
