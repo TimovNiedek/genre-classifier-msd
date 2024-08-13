@@ -8,8 +8,10 @@ import datetime
 
 
 @task
-def read_data(data_path: str) -> pd.DataFrame:
-    data = read_parquet_data(data_path, "million-songs-dataset-s3").set_index("song_id")
+def read_data(
+    data_path: str, bucket_block_name: str = "million-songs-dataset-s3"
+) -> pd.DataFrame:
+    data = read_parquet_data(data_path, bucket_block_name).set_index("song_id")
     return data
 
 
@@ -71,7 +73,7 @@ def split_data_flow(
     new_releases_start_date: datetime.date = datetime.date.today(),
     num_releases_per_day: int = 100,
 ) -> str:
-    full_data = read_data(source_data_path)
+    full_data = read_data(source_data_path, bucket_block_name)
     train_val_set, test_set = split_by_release_year(full_data, test_size=test_size)
     train_set, val_set = random_split(
         train_val_set, val_size / (1 - test_size), seed=seed

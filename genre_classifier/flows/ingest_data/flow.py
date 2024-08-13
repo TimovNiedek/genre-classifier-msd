@@ -7,17 +7,19 @@ from prefect_aws import S3Bucket
 
 
 @task(retries=1, retry_delay_seconds=2)
-def download_msd_subset(target_dir: Path) -> None:
+def download_msd_subset(
+    target_dir: Path,
+    url: str = "http://labrosa.ee.columbia.edu/~dpwe/tmp/millionsongsubset.tar.gz",
+) -> None:
     """Download the Million Song Dataset's subset used for development purposes.
     These are downloaded to the given target directory, and consist of many h5 files.
     """
     ShellOperation(
         commands=[
-            "mkdir -p ${target_dir}",
-            "wget -q -P ${target_dir}/ http://labrosa.ee.columbia.edu/~dpwe/tmp/millionsongsubset.tar.gz",
-            "tar -xzf ${target_dir}/millionsongsubset.tar.gz -C ${target_dir}/",
+            f"mkdir -p {target_dir}",
+            f"wget -q -P {target_dir}/ {url}",
+            f"tar -xzf {target_dir}/millionsongsubset.tar.gz -C {target_dir}/",
         ],
-        env={"target_dir": str(target_dir)},
     ).run()
 
 
@@ -30,9 +32,13 @@ def list_files(data_dir: Path) -> None:
 
 
 @task
-def upload_to_s3(data_dir: Path, target_dir: Optional[Path]) -> int:
+def upload_to_s3(
+    data_dir: Path,
+    target_dir: Optional[Path],
+    bucket_block_name: str = "million-songs-dataset-s3",
+) -> int:
     logger = get_run_logger()
-    bucket = S3Bucket.load("million-songs-dataset-s3")
+    bucket = S3Bucket.load(bucket_block_name)
     to_path = str(target_dir) if target_dir is not None else None
     file_count = bucket.put_directory(local_path=str(data_dir), to_path=to_path)
     logger.info(f"Uploaded {file_count} files to {bucket.bucket_name}")
