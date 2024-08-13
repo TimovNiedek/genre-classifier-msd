@@ -1,5 +1,34 @@
 # genre-classifier-msd
 
+## Problem description
+
+The task that I chose was to predict the genre of new music track releases based on certain features. To do so, I used the Million Song Dataset, which contains metadata and a list of genre tags.
+
+The task is a multi-class, multi-label classification task, i.e. for any track, any number of genres can be predicted.
+
+### Stack
+
+* Prefect: workflow orchestration
+* sklearn: model training
+* MLflow: experiment tracking & model registry
+* Evidently AI: model monitoring
+* Terraform: IaC
+* AWS S3: storage
+* AWS EC2: Prefect server host
+* ruff: linter
+* poetry: dependency management
+
+### Design
+
+There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
+
+1. `ingest_data`:
+    * load the Million Song Dataset, using the subset to keep the dataset size managable.
+    * extract the .h5 files, one per individual track.
+    * upload to an S3 bucket
+2. `preprocess`:
+    * Extract the relevant metadata from the individual
+
 ## Getting started
 
 ### Prerequisites
