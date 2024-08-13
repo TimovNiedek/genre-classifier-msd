@@ -26,7 +26,7 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 * Terraform: IaC
 * AWS S3: storage
 * AWS EC2: Prefect server host
-* ruff: linter
+* ruff: linter & code formatter
 * poetry: dependency management
 
 ## Design
