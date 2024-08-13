@@ -22,12 +22,50 @@ The task is a multi-class, multi-label classification task, i.e. for any track, 
 
 There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
 
+#### Training pipeline
+
 1. `ingest_data`:
-    * load the Million Song Dataset, using the subset to keep the dataset size manageable.
-    * extract the .h5 files, one per individual track.
-    * upload to an S3 bucket
+    * Load the Million Song Dataset subset.
+    * Extract .h5 files for each track.
+    * Upload the files to an S3 bucket (default: `subset/MillionSongSubset`).
 2. `preprocess`:
-    * Extract the relevant metadata from the individual track files.
+    * Load the .h5 files.
+    * For each track, extract the features.
+    * Load a separate file with a subset of valid genre tags and extract the genres from the metadata for each track.
+    * Write the output to a single Parquet file (default: `subset/MillionSongSubset/subset.parquet`).
+3. `split_data`:
+    * First, create a test set of tracks that will be used for inference.
+      * The tracks with the latest release year are used for the test set.
+      * The test set is further split into chunks and written to separate directories (default: `subset/daily`) in the S3 bucket to simulate a real-world scenario where new tracks are released each day.
+    * Split the remaining tracks into a random training and validation set.
+      * Write the train, validation and test sets to the S3 bucket as Parquet files (default: `subset/train.parquet`, `subset/val.parquet` and `subset/test.parquet`).
+4. `train`:
+    * Load the training & validation sets.
+    * Filter the genre labels to include only the top K genres (`top_k_genres` is a hyperparameter).
+    * Fix outliers, apply feature normalization and impute missing values.
+    * Train a random forest classifier (multi-label) and log it to MLflow.
+    * Evaluate on the validation set and log the results to MLflow.
+      * The main metrics are the jaccard score and the hamming loss.
+    * If the metrics are better than some predefined thresholds, register the model in MLflow's model registry.
+
+There is an additional flow, `complete_training`, which calls the above training flows as subflows, chaining everything together.
+If you want to train a model, it is recommended to use this flow, as it will ensure that all the steps are executed in the correct order.
+
+#### Inference pipeline
+
+The inference pipeline is scheduled to be executed regularly, e.g. once a day. It is designed to simulate a real-world scenario where new tracks are released each day.
+At every run, the pipeline will predict the genres for one day's worth of tracks.
+
+1. `predict`:
+    * Find a batch of tracks that hasn't been analysed yet.
+    * Load the model from MLflow's model registry.
+    * Predict the genres for each track.
+    * Write the results to a Parquet file in the S3 bucket (default: `subset/predictions`).
+2. `model_monitoring`:
+    * Load the predictions from the S3 bucket.
+    * Calculate the model performance metrics.
+    * Create an Evidently AI report and upload it to the S3 bucket (default: `subset/metrics_report.html`).
+    * If the model performance is below some predefined thresholds, call the complete training pipeline as a subflow.
 
 ## Getting started
 
@@ -77,6 +115,8 @@ To install the dependencies locally, run `make init`. This simply instructs poet
 Update the `name` value inside the `DeploymentImage` at [deploy.py](./deploy.py) to point to your public repository. Otherwise you will not be able to build the image & pull it from the Prefect server.
 
 To deploy the training & inference code, run `make deploy`. This will connect to the Prefect server, create the required AWS blocks, build the Docker container and deploy the Prefect flows.
+
+Note: the bucket name may need to be customized if the name is already taken, you can do so by updating the `bucket_name` variable in [create_s3_buckets.py](genre_classifier/blocks/create_s3_buckets.py).
 
 If everything is successful, you should see the following output:
 

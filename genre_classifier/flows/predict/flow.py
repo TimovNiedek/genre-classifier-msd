@@ -7,6 +7,7 @@ import pandas as pd
 from mlflow.client import MlflowClient
 import mlflow
 
+from genre_classifier.preprocess_common import fix_outliers
 from genre_classifier.utils import (
     read_parquet_data,
     write_parquet_data,
@@ -59,8 +60,13 @@ def get_latest_releases(
 
 @task
 def predict(
-    df: pd.DataFrame, pipeline: Pipeline, mlb: MultiLabelBinarizer
+    df: pd.DataFrame,
+    pipeline: Pipeline,
+    mlb: MultiLabelBinarizer,
+    valid_tempo_min: float = 70,
+    valid_tempo_max: float = 180,
 ) -> pd.DataFrame:
+    df = fix_outliers(df, valid_tempo_min, valid_tempo_max)
     predictions = pipeline.predict(df)
     predictions_plaintext = mlb.inverse_transform(predictions)
     prediction_data = []
@@ -84,6 +90,8 @@ def predict_flow(
     bucket_block_name: str = "million-songs-dataset-s3",
     source_data_path: str = "subset/daily",
     target_data_path: str = "subset/predictions",
+    valid_tempo_min: float = 70,
+    valid_tempo_max: float = 180,
 ):
     logger = get_run_logger()
     releases_data = get_latest_releases(
@@ -96,7 +104,9 @@ def predict_flow(
         releases, date = releases_data
     pipeline = fetch_model("genre-classifier-random-forest")
     mlb = fetch_model("genre-classifier-multi-label-binarizer")
-    predictions_data = predict(releases, pipeline, mlb)
+    predictions_data = predict(
+        releases, pipeline, mlb, valid_tempo_min, valid_tempo_max
+    )
     predictions_fullpath = f"{target_data_path}/{date}/predictions.parquet"
     upload_predictions(predictions_data, predictions_fullpath, bucket_block_name)
 
