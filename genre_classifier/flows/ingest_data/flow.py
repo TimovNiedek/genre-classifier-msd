@@ -40,11 +40,12 @@ def upload_to_s3(data_dir: Path, target_dir: Optional[Path]) -> int:
 
 
 @flow(log_prints=True)
-def ingest_flow():
+def ingest_flow() -> str:
     local_data_path = Path("data")
     download_completion = download_msd_subset(local_data_path)
     list_files(local_data_path, wait_for=[download_completion])
     upload_to_s3(local_data_path, Path("subset"), wait_for=[download_completion])
+    return "subset/MillionSongSubset"
 
 
 if __name__ == "__main__":

@@ -57,6 +57,8 @@ Successfully created/updated all deployments!
 ├────────────────────────────────────────────────┼─────────┼─────────┤
 │ train-flow/genre-classifier-train-v0           │ applied │         │
 ├────────────────────────────────────────────────┼─────────┼─────────┤
+│ complete-training-flow/complete-training-v0    │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
 │ predict-flow/genre-classifier-predict-v0       │ applied │         │
 └────────────────────────────────────────────────┴─────────┴─────────┘
 ```

@@ -8,6 +8,7 @@ from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
 from genre_classifier.flows.train.flow import train_flow
 from genre_classifier.flows.predict.flow import predict_flow
+from genre_classifier.flows.complete_training.flow import complete_training_flow
 
 
 VERSION = "v0"
@@ -19,6 +20,7 @@ if __name__ == "__main__":
         preprocess_flow.to_deployment(name=f"genre-classifier-preprocess-{VERSION}"),
         split_data_flow.to_deployment(name=f"genre-classifier-split-data-{VERSION}"),
         train_flow.to_deployment(name=f"genre-classifier-train-{VERSION}"),
+        complete_training_flow.to_deployment(name=f"complete-training-{VERSION}"),
         predict_flow.to_deployment(
             # Execute a prediction every 5 minutes, in a real use-case this would be executed at the end of every day
             name=f"genre-classifier-predict-{VERSION}",

@@ -70,7 +70,7 @@ def split_data_flow(
     seed: int | None = 42,
     new_releases_start_date: datetime.date = datetime.date.today(),
     num_releases_per_day: int = 100,
-):
+) -> str:
     full_data = read_data(source_data_path)
     train_val_set, test_set = split_by_release_year(full_data, test_size=test_size)
     train_set, val_set = random_split(
@@ -87,6 +87,7 @@ def split_data_flow(
         bucket_block_name,
         f"{target_data_path}/daily",
     )
+    return target_data_path
 
 
 if __name__ == "__main__":
