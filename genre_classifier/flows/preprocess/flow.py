@@ -114,6 +114,24 @@ def get_song_metadata(
     return song_metadata
 
 
+async def get_song_metadata_async(
+    h5_path: str,
+    bucket_block: S3Bucket,
+    genre_filter: list[str] = [],
+) -> SongMetadata:
+    with BytesIO() as buf:
+        await bucket_block.download_object_to_file_object(h5_path, buf)
+
+        with h5py.File(buf, mode="r") as f:
+            genre_tags = get_genres(f, genre_filter)
+            features = get_features(f)
+
+    song_id = Path(h5_path).stem
+    song_metadata = SongMetadata(song_id=song_id, genres=genre_tags, **features)
+
+    return song_metadata
+
+
 @task
 def write_features(
     song_metadata: list[SongMetadata],
@@ -131,15 +149,16 @@ def write_features(
 
 
 @task
-def get_song_metadata_list(
+async def get_song_metadata_list(
     h5_paths: str,
     genre_filter: list[str] = [],
     bucket_block_name: str = "million-songs-dataset-s3",
 ) -> list[SongMetadata]:
     song_metas = []
+    bucket_block = await S3Bucket.load(bucket_block_name)
     for h5_path in h5_paths:
-        song_metadata = get_song_metadata(
-            h5_path, genre_filter=genre_filter, bucket_block_name=bucket_block_name
+        song_metadata = await get_song_metadata_async(
+            h5_path, genre_filter=genre_filter, bucket_block=bucket_block
         )
         song_metas.append(song_metadata)
     return song_metas
@@ -168,7 +187,7 @@ def preprocess_flow(
     logger = get_run_logger()
     paths = list_file_paths.submit(bucket_folder, limit, s3_bucket_block_name)
     genre_filter = get_genres_list.submit(genres_url)
-    song_metas = get_song_metadata_list(
+    song_metas = get_song_metadata_list.submit(
         paths, genre_filter, bucket_block_name=s3_bucket_block_name
     )
     logger.info(f"Extracted metadata for {len(song_metas)} songs")
