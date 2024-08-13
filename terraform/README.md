@@ -34,19 +34,24 @@ export AWS_SECRET_ACCESS_KEY=...
 
 Also add them to the `variables.tfvars` file as described below.
 
-### `variables.tfvars`
+### Terraform State bucket
 
-Create a file named `variables.tfvars` in the `terraform` directory with the following content:
+Create an S3 bucket to store the terraform state. In [main.tf](./main.tf), update the following block with your bucket name:
 
 ```hcl
-dev_ssh_public_key    = "ssh-rsa AAAAB3NzaC1y..."  # your public key
-aws_access_key_id     = "..."  # AWS_ACCESS_KEY_ID
-aws_access_key_secret = "..." # AWS_SECRET_ACCESS_KEY
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-tvn"
+    key    = "mlops-zoomcamp/state"
+    region = "eu-central-1"
+  }
+}
 ```
 
 ## Setup
 
-To create the infrastructure run `make infra` from the root directory.
+To create the infrastructure run `make infra` from the root directory. While the command will exit after the infrastructure is created,
+the Prefect server will take around 5-10 minutes to start up.
 
 ## Destroy
 

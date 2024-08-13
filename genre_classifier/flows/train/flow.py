@@ -4,6 +4,7 @@ from genre_classifier.utils import (
     get_file_uri,
     set_aws_credential_env,
 )
+from genre_classifier.preprocess_common import fix_outliers as _fix_outliers
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 from sklearn.compose import make_column_transformer
@@ -84,11 +85,7 @@ def fix_outliers(
     logger = get_run_logger()
     logger.debug("Before fixing outliers:")
     logger.debug(df.describe())
-    df["year"] = df["year"].replace(0, np.nan)
-    df.loc[df["tempo"] < valid_tempo_min / 2, "tempo"] = np.nan
-    df.loc[df["tempo"] > valid_tempo_max * 2, "tempo"] = np.nan
-    df.loc[df["tempo"] < valid_tempo_min, "tempo"] *= 2
-    df.loc[df["tempo"] > valid_tempo_max, "tempo"] /= 2
+    df = _fix_outliers(df, valid_tempo_min, valid_tempo_max)
     logger.debug("After fixing outliers:")
     logger.debug(df.describe())
     return df
