@@ -34,6 +34,21 @@ export AWS_SECRET_ACCESS_KEY=...
 
 Also add them to the `variables.tfvars` file as described below.
 
+### Terraform State bucket
+
+Create an S3 bucket to store the terraform state. In [main.tf](./main.tf), update the following block with your bucket name:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-tvn"
+    key    = "mlops-zoomcamp/state"
+    region = "eu-central-1"
+  }
+}
+```
+
+
 ### `variables.tfvars`
 
 Create a file named `variables.tfvars` in the `terraform` directory with the following content:
