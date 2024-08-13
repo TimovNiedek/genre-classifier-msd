@@ -1,6 +1,10 @@
 init:
 	poetry env use 3.12
 	poetry install
+	pre-commit install
+
+quality_checks:
+	pre-commit run --all-files
 
 infra:
 	cd terraform; \
@@ -26,3 +30,9 @@ deploy: Dockerfile genre_classifier deploy.py
 destroy:
 	cd terraform; \
 	terraform destroy -var-file variables.tfvars -input=false
+
+test:
+	poetry run pytest tests/unit
+
+integration_test:
+	poetry run pytest tests/integration
