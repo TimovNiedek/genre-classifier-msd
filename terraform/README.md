@@ -48,17 +48,6 @@ terraform {
 }
 ```
 
-
-### `variables.tfvars`
-
-Create a file named `variables.tfvars` in the `terraform` directory with the following content:
-
-```hcl
-dev_ssh_public_key    = "ssh-rsa AAAAB3NzaC1y..."  # your public key
-aws_access_key_id     = "..."  # AWS_ACCESS_KEY_ID
-aws_access_key_secret = "..." # AWS_SECRET_ACCESS_KEY
-```
-
 ## Setup
 
 To create the infrastructure run `make infra` from the root directory.

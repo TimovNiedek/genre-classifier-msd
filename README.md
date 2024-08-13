@@ -34,6 +34,14 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
 ### Prerequisites
 
 * [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+  * Note: on Mac M1, you need to create an amd64 environment, otherwise you will run into an error like "Template vX.Y.Z does not have a package available."
+    ```bash
+    brew uninstall terraform
+    brew install tfenv
+    TFENV_ARCH=amd64 tfenv install 1.9.3
+    tfenv use 1.9.3
+    ```
+    Then, you can proceed with the instructions below.
 * AWS account
 * AWS credentials should be available in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, following the [AWS Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/aws-build) instructions.
 * Poetry should be installed, following the [installation instructions](https://python-poetry.org/docs/#installation).

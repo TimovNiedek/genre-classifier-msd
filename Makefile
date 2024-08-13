@@ -5,6 +5,10 @@ init:
 infra:
 	cd terraform; \
 	terraform init -input=false; \
+	touch variables.tfvars; \
+	echo "dev_ssh_public_key    = \"$(shell cat ~/.ssh/dev_key.pub)\"" > variables.tfvars; \
+	echo "aws_access_key_id     = \"$(AWS_ACCESS_KEY_ID)\"" >> variables.tfvars; \
+	echo "aws_access_key_secret = \"$(AWS_SECRET_ACCESS_KEY)\"" >> variables.tfvars; \
 	terraform refresh -var-file variables.tfvars; \
 	terraform plan -out=tfplan -input=false -var-file=variables.tfvars; \
 	terraform apply -input=false tfplan
