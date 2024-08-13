@@ -1,12 +1,23 @@
 # genre-classifier-msd
 
+This repository contains the code for the genre classifier task for the MLOps Zoomcamp course.
+For more information, see the [MLOps Zoomcamp course repository](https://github.com/DataTalksClub/mlops-zoomcamp).
+
 ## Problem description
 
-The task that I chose was to predict the genre of new music track releases based on certain features. To do so, I used the Million Song Dataset, which contains metadata and a list of genre tags.
+The task that I chose was to predict the genre of new music track releases based on certain features.
+Imagine a music streaming service that wants to automatically tag new tracks with genres in order to improve
+the user experience and recommendation system. Maybe the genre labels are not provided by the artists, or the service wants to add more granular tags to the tracks.
 
-The task is a multi-class, multi-label classification task, i.e. for any track, any number of genres can be predicted.
+To do so, I used the [Million Song Dataset](http://millionsongdataset.com/), which contains metadata and a list of tags for each track.
+The tags do not follow a set structure, and there are many different tags with varying quality.
 
-### Stack
+Additionally, each track has a set of features extracted from the audio, such as tempo, key, loudness, etc.
+These are provided by the [Echo Nest](https://the.echonest.com/) API, and an example of the track metadata can be found [here](http://millionsongdataset.com/pages/example-track-description/).
+
+The task is a **multi-class**, **multi-label classification** task, i.e. for any track, any number of genres can be predicted.
+
+## Stack
 
 * Prefect: workflow orchestration
 * sklearn: model training
@@ -18,11 +29,11 @@ The task is a multi-class, multi-label classification task, i.e. for any track, 
 * ruff: linter
 * poetry: dependency management
 
-### Design
+## Design
 
 There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
 
-#### Training pipeline
+### Training pipeline
 
 1. `ingest_data`:
     * Load the Million Song Dataset subset.
@@ -51,7 +62,7 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
 There is an additional flow, `complete_training`, which calls the above training flows as subflows, chaining everything together.
 If you want to train a model, it is recommended to use this flow, as it will ensure that all the steps are executed in the correct order.
 
-#### Inference pipeline
+### Inference pipeline
 
 The inference pipeline is scheduled to be executed regularly, e.g. once a day. It is designed to simulate a real-world scenario where new tracks are released each day.
 At every run, the pipeline will predict the genres for one day's worth of tracks.
