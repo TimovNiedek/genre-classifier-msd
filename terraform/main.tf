@@ -14,6 +14,16 @@ provider "aws" {
 }
 
 
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-tvn"
+    key    = "mlops-zoomcamp/state"
+    region = "eu-central-1"
+  }
+}
+
+
+
 resource "aws_security_group" "main_sg" {
   egress = [
     {
