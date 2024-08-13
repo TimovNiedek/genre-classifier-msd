@@ -7,6 +7,7 @@ import pandas as pd
 import tempfile
 
 from urllib import request
+import asyncio
 
 from typing import Optional
 import h5py
@@ -165,7 +166,7 @@ async def get_song_metadata_list(
 
 
 @flow(task_runner=ConcurrentTaskRunner())
-def preprocess_flow(
+async def preprocess_flow(
     bucket_folder: str = "subset/MillionSongSubset",
     target_path: str = "subset/MillionSongSubset/subset.parquet",
     s3_bucket_block_name: str = "million-songs-dataset-s3",
@@ -184,13 +185,11 @@ def preprocess_flow(
     Returns:
         str: The path to the preprocessed data relative to the S3 bucket.
     """
-    logger = get_run_logger()
     paths = list_file_paths.submit(bucket_folder, limit, s3_bucket_block_name)
     genre_filter = get_genres_list.submit(genres_url)
-    song_metas = get_song_metadata_list.submit(
+    song_metas = await get_song_metadata_list(
         paths, genre_filter, bucket_block_name=s3_bucket_block_name
     )
-    logger.info(f"Extracted metadata for {len(song_metas)} songs")
     write_features(
         song_metas, target_path=target_path, bucket_block_name=s3_bucket_block_name
     )
@@ -198,4 +197,8 @@ def preprocess_flow(
 
 
 if __name__ == "__main__":
-    preprocess_flow()
+    asyncio.run(
+        preprocess_flow(
+            target_path="subset/MillionSongSubset/subset-test.parquet", limit=10
+        )
+    )
