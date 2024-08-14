@@ -48,15 +48,13 @@ terraform {
 }
 ```
 
-### Update bucket names
-
-Change the bucket names in [storage.tf](./storage.tf) and [create_s3_buckets.py](../genre_classifier/blocks/create_s3_buckets.py) to a unique name.
-These need to be unique across all AWS accounts, so you may need to add a prefix or suffix to the bucket names.
-
 ## Setup
 
 To create the infrastructure run `make infra` from the root directory. While the command will exit after the infrastructure is created,
 the Prefect server will take around 5-10 minutes to start up.
+
+If there are any errors, you may need to change the bucket names in [storage.tf](./storage.tf) and [create_s3_buckets.py](../genre_classifier/blocks/create_s3_buckets.py) to something unique.
+These need to be unique across all AWS accounts, so you may need to add a prefix or suffix to the bucket names.
 
 ## Destroy
 

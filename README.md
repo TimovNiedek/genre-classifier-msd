@@ -25,13 +25,14 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 * Evidently AI: model monitoring
 * Terraform: IaC
 * AWS S3: storage
-* AWS EC2: Prefect server host
+* AWS EC2: Prefect server & MLflow server host
 * ruff: linter & code formatter
 * poetry: dependency management
 * Docker: containerization
 * GitHub Actions: CI/CD
 * pre-commit: git hooks
 * pytest: unit tests & integration tests
+* makefile: task automation
 
 ## Design
 
@@ -187,6 +188,13 @@ The flow is called `model-monitoring-flow`. The results are available at http://
 
 If the monitoring pipeline detects data drift, it will trigger the complete training pipeline to retrain the model.
 To disable this behaviour, set the `trigger_retrain_if_needed` parameter to `False` in the `model-monitoring-flow`.
+
+## Tests
+
+To run unit tests, execute `make tests`. This will run the tests in the `tests` directory.
+The integration tests can be run by executing `make integration_tests`. This requires the infrastructure to be set up, as it
+writes some temporary files to a bucket called `million-songs-dataset-s3-cicd`.
+
 
 ## Cleanup
 
