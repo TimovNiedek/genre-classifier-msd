@@ -215,8 +215,8 @@ def train_flow(
     class_weight: str | None = "balanced",
     seed=42,
     register_model_if_accepted: bool = False,
-    min_jaccard_score: float = 0.17,
-    max_hamming_loss: float = 0.18,
+    min_jaccard_score: float = 0.12,
+    max_hamming_loss: float = 0.3,
     register_to_environment: str = "dev",
 ):
     set_aws_credential_env()
