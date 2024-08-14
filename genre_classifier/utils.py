@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from prefect import get_run_logger
 from prefect_aws import AwsCredentials, S3Bucket
 
 
@@ -47,9 +46,8 @@ def download_file_from_s3(
     to_path: Path | str,
     bucket_block_name: str = "million-songs-dataset-s3",
 ) -> None:
-    logger = get_run_logger()
     bucket = S3Bucket.load(bucket_block_name)
-    logger.info(f"Downloading {data_path} from {bucket.bucket_name}")
+    print(f"Downloading {data_path} from {bucket.bucket_name}")
     bucket.download_object_to_path(data_path, to_path)
 
 
