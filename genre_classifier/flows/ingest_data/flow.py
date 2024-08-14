@@ -18,7 +18,7 @@ def download_msd_subset(
         commands=[
             f"mkdir -p {target_dir}",
             f"wget -q -P {target_dir}/ {url}",
-            f"tar -xzf {target_dir}/millionsongsubset.tar.gz -C {target_dir}/",
+            f'tar -xzf {target_dir}/millionsongsubset.tar.gz -C {target_dir}/ --exclude="._*"',
         ],
     ).run()
 

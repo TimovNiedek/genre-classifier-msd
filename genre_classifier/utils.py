@@ -47,6 +47,7 @@ def download_file_from_s3(
     bucket_block_name: str = "million-songs-dataset-s3",
 ) -> None:
     bucket = S3Bucket.load(bucket_block_name)
+    print(f"Downloading {data_path} from {bucket.bucket_name}")
     bucket.download_object_to_path(data_path, to_path)
 
 
