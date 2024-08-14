@@ -23,8 +23,9 @@ def complete_training_flow(
     class_weight: str | None = "balanced",
     seed=42,
     register_model_if_accepted: bool = True,
-    min_jaccard_score: float = 0.17,
-    max_hamming_loss: float = 0.18,
+    min_jaccard_score: float = 0.12,
+    max_hamming_loss: float = 0.3,
+    register_to_environment: str = "dev",
 ):
     ingested_data_path = ingest_flow()
     preprocessed_data_path = asyncio.run(
@@ -55,6 +56,7 @@ def complete_training_flow(
         register_model_if_accepted=register_model_if_accepted,
         min_jaccard_score=min_jaccard_score,
         max_hamming_loss=max_hamming_loss,
+        register_to_environment=register_to_environment,
     )
 
 

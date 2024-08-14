@@ -82,6 +82,9 @@ At every run, the pipeline will predict the genres for one day's worth of tracks
 
 ## Getting started
 
+To run the code, you need to set up the infrastructure, initialize the local environment, connect to the Prefect & MLflow server, and deploy the flows.
+It is very important to follow the below instructions carefully, as the flows are designed to work with the infrastructure set up by Terraform.
+
 ### Prerequisites
 
 * [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
@@ -150,13 +153,30 @@ Successfully created/updated all deployments!
 ├────────────────────────────────────────────────┼─────────┼─────────┤
 │ complete-training-flow/complete-training-v0    │ applied │         │
 ├────────────────────────────────────────────────┼─────────┼─────────┤
+│ model-monitoring-flow/model-monitoring-v0      │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
 │ predict-flow/genre-classifier-predict-v0       │ applied │         │
 └────────────────────────────────────────────────┴─────────┴─────────┘
+
 ```
 
 ## Execute flows
 
+### Train
 
+First, execute the complete training run to train the model. This will run the ingest, preprocess, split data and train flows in sequence.
+Open the Prefect UI at http://localhost:4200/flows and trigger the `complete-training-flow`. All parameters are set to default values, you only need to set the MLflow experiment name.
+
+The experiment is tracked in MLflow, and you can view the results at http://localhost:5000. If the results of the training are good, the model will be registered in the model registry.
+
+### Inference
+
+The inference pipeline is set to run every 5 minutes. View the runs in the Prefect UI at http://localhost:4200/flows.
+
+### Monitoring
+
+The monitoring pipeline is set to run every morning. You can manually trigger it from the Prefect UI if you want to see the results immediately.
+The flow is called `model-monitoring-flow`. The results are available at http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/index.html.
 
 ## To-Do's
 
