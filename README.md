@@ -77,7 +77,7 @@ At every run, the pipeline will predict the genres for one day's worth of tracks
     * Calculate the model performance metrics.
     * Create an Evidently AI report and upload it to an S3 bucket that serves it as a static html page.
       * This bucket is created in Terraform and is named `evidently-static-dashboard-tvn` by default. To run it yourself, change the bucket name in [storage](terraform/storage.tf) and [create_s3_buckets.py](genre_classifier/blocks/create_s3_buckets.py).
-      *
+      * The report is available at `http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/`, or `http://<BUCKET>.s3-website.<REGION>.amazonaws.com/report.html` if you changed the bucket name.
     * If the model performance is below some predefined thresholds, call the complete training pipeline as a subflow.
 
 ## Getting started
