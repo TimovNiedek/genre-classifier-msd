@@ -75,7 +75,9 @@ At every run, the pipeline will predict the genres for one day's worth of tracks
 2. `model_monitoring`:
     * Load the predictions from the S3 bucket.
     * Calculate the model performance metrics.
-    * Create an Evidently AI report and upload it to the S3 bucket (default: `subset/metrics_report.html`).
+    * Create an Evidently AI report and upload it to an S3 bucket that serves it as a static html page.
+      * This bucket is created in Terraform and is named `evidently-static-dashboard-tvn` by default. To run it yourself, change the bucket name in [storage](terraform/storage.tf) and [create_s3_buckets.py](genre_classifier/blocks/create_s3_buckets.py).
+      *
     * If the model performance is below some predefined thresholds, call the complete training pipeline as a subflow.
 
 ## Getting started
@@ -157,12 +159,12 @@ Successfully created/updated all deployments!
 * [x] Add makefile
     * [x] Deploy training pipeline
     * [x] Execute training pipeline
-    * [ ] Test flow steps
-* [ ] Add unit tests
-* [ ] Add integration tests
-* [ ] Add CI / CD
+    * [x] Test flow steps
+* [x] Add unit tests
+* [x] Add integration tests
+* [x] Add CI / CD
 * [x] Add mlflow server to IaC
-* [ ] Add observability tooling
+* [x] Add observability tooling
 * [x] Add experiment tracking
 * [x] Design deployment method (batch / streaming)
     * [x] Mock new incoming data
