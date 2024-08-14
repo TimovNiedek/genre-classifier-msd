@@ -153,13 +153,17 @@ async def get_song_metadata_list(
     genre_filter: list[str] = [],
     bucket_block_name: str = "million-songs-dataset-s3",
 ) -> list[SongMetadata]:
+    logger = get_run_logger()
     song_metas = []
     bucket_block = await S3Bucket.load(bucket_block_name)
     for h5_path in h5_paths:
-        song_metadata = await get_song_metadata_async(
-            h5_path, genre_filter=genre_filter, bucket_block=bucket_block
-        )
-        song_metas.append(song_metadata)
+        try:
+            song_metadata = await get_song_metadata_async(
+                h5_path, genre_filter=genre_filter, bucket_block=bucket_block
+            )
+            song_metas.append(song_metadata)
+        except Exception as e:
+            logger.error(f"Error processing {h5_path}: {e}")
     return song_metas
 
 
