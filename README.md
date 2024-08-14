@@ -66,10 +66,12 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
 There is an additional flow, `complete_training`, which calls the above training flows as subflows, chaining everything together.
 If you want to train a model, it is recommended to use this flow, as it will ensure that all the steps are executed in the correct order.
 
-### Inference pipeline
+### Prediction pipeline
 
-The inference pipeline is scheduled to be executed regularly, e.g. once a day. It is designed to simulate a real-world scenario where new tracks are released each day.
+The prediction service is deployed as a batch inference pipeline.
+It is designed to simulate a real-world scenario where new tracks are released each day.
 At every run, the pipeline will predict the genres for one day's worth of tracks.
+To see immediate results for demo purposes, it is scheduled to run every 5 minutes, picking the data for a new day each time.
 
 1. `predict`:
     * Find a batch of tracks that hasn't been analysed yet.
@@ -173,14 +175,18 @@ Open the Prefect UI at http://localhost:4200/flows and trigger the `complete-tra
 
 The experiment is tracked in MLflow, and you can view the results at http://localhost:5000. If the results of the training are good, the model will be registered in the model registry.
 
-### Inference
+### Batch Inference
 
 The inference pipeline is set to run every 5 minutes. View the runs in the Prefect UI at http://localhost:4200/flows.
+The results are stored in the S3 bucket and can be viewed in the `subset/predictions` directory.
 
 ### Monitoring
 
 The monitoring pipeline is set to run every morning. You can manually trigger it from the Prefect UI if you want to see the results immediately.
 The flow is called `model-monitoring-flow`. The results are available at http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/index.html.
+
+If the monitoring pipeline detects data drift, it will trigger the complete training pipeline to retrain the model.
+To disable this behaviour, set the `trigger_retrain_if_needed` parameter to `False` in the `model-monitoring-flow`.
 
 ## Cleanup
 
