@@ -16,7 +16,7 @@ from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
 from genre_classifier.flows.train.flow import train_flow
 import asyncio
-import mlflow
+from mlflow.client import MlflowClient
 
 import datetime
 
@@ -48,16 +48,6 @@ def s3_client():
 
 
 @pytest.fixture(scope="session")
-def mlflow_server():
-    os.system(
-        "docker run -d -p 5000:5000 --name mlflow-server ghcr.io/mlflow/mlflow mlflow server --host 0.0.0.0 --port 5000"
-    )
-    yield
-    os.system("docker stop mlflow-server")
-    os.system("docker rm mlflow-server")
-
-
-@pytest.fixture(scope="session")
 def cicd_data(s3_client) -> Path:
     with tempfile.TemporaryDirectory() as tmpdir:
         archive_local_path = Path(tmpdir) / "msd-integration.tar.gz"
@@ -66,6 +56,22 @@ def cicd_data(s3_client) -> Path:
         )
         os.system(f"tar -xzf {archive_local_path} -C {tmpdir}")
         yield Path(tmpdir) / "MillionSongSubset"
+
+
+@pytest.fixture(scope="session")
+def mlflow_client() -> MlflowClient:
+    return MlflowClient("http://0.0.0.0:5000")
+
+
+@pytest.fixture(scope="session")
+def experiment_id(mlflow_client) -> str:
+    try:
+        experiment_id = mlflow_client.get_experiment_by_name(
+            "integration-test"
+        ).experiment_id
+        return experiment_id
+    except Exception:
+        return mlflow_client.create_experiment("integration-test")
 
 
 def test_upload_to_s3(cicd_data, s3_client):
@@ -172,11 +178,26 @@ def test_split_data_flow(s3_client):
     assert len(response["Contents"]) == 2
 
 
-def test_train(mlflow_server):
-    mlflow.set_tracking_uri("http://0.0.0.0:5000")
+def test_train(mlflow_client, experiment_id):
     train_flow(
         mlflow_experiment_name="integration-test",
         mlflow_tracking_uri="http://0.0.0.0:5000",
         bucket_block_name="million-songs-dataset-s3-cicd",
         data_path=str(s3_base_directory / "subset" / "splits"),
+        register_model_if_accepted=True,
+        max_hamming_loss=1.0,
+        min_jaccard_score=0.0,
+        register_to_environment="integration-test",
     )
+
+    run = mlflow_client.search_runs(experiment_ids=[experiment_id])[0]
+
+    assert run.info.status == "FINISHED"
+
+    model = mlflow_client.get_registered_model("genre-classifier-random-forest")
+    assert len(model.latest_versions) == 1
+    assert model.latest_versions[0].tags.get("env") == "integration-test"
+
+    model = mlflow_client.get_registered_model("genre-classifier-multi-label-binarizer")
+    assert len(model.latest_versions) == 1
+    assert model.latest_versions[0].tags.get("env") == "integration-test"

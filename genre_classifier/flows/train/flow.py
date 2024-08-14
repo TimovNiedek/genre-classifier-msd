@@ -145,6 +145,25 @@ def train(
     return pipeline, mlb
 
 
+def register_models(environment: str):
+    logger = get_run_logger()
+    run = mlflow.active_run()
+
+    new_version = mlflow.register_model(
+        f"runs:/{run.info.run_id}/model",
+        "genre-classifier-random-forest",
+        tags={"env": environment},
+    )
+    logger.info(f"Registered classifier with version {new_version.version}")
+
+    new_version = mlflow.register_model(
+        f"runs:/{run.info.run_id}/multi_label_binarizer",
+        "genre-classifier-multi-label-binarizer",
+        tags={"env": environment},
+    )
+    logger.info(f"Registered MultiLabelBinarizer with version {new_version.version}")
+
+
 @task
 def eval(
     test_data: pd.DataFrame,
@@ -153,6 +172,7 @@ def eval(
     register_model_if_accepted: bool,
     min_jaccard_score: float,
     max_hamming_loss: float,
+    register_to_environment: str,
 ) -> bool:
     logger = get_run_logger()
     X_test = test_data[FEATURE_COLS]
@@ -170,29 +190,7 @@ def eval(
         return False
     elif _jaccard_score >= min_jaccard_score and _hamming_loss <= max_hamming_loss:
         logger.info("Model evaluation criteria were met, registering model.")
-        run = mlflow.active_run()
-
-        new_version = mlflow.register_model(
-            f"runs:/{run.info.run_id}/model",
-            "genre-classifier-random-forest",
-            tags={
-                # In reality we'd do additional (possibly manual) checks before promoting to production
-                "env": "production"
-            },
-        )
-        logger.info(f"Registered classifier with version {new_version.version}")
-
-        new_version = mlflow.register_model(
-            f"runs:/{run.info.run_id}/multi_label_binarizer",
-            "genre-classifier-multi-label-binarizer",
-            tags={
-                # In reality we'd do additional (possibly manual) checks before promoting to production
-                "env": "production"
-            },
-        )
-        logger.info(
-            f"Registered MultiLabelBinarizer with version {new_version.version}"
-        )
+        register_models(register_to_environment)
         return True
     else:
         logger.info(
@@ -221,11 +219,13 @@ def train_flow(
     register_model_if_accepted: bool = False,
     min_jaccard_score: float = 0.17,
     max_hamming_loss: float = 0.18,
+    register_to_environment: str = "dev",
 ):
     set_aws_credential_env()
 
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment(mlflow_experiment_name)
+    mlflow.start_run()
 
     log_params(
         top_k_genres=top_k_genres,
@@ -264,7 +264,9 @@ def train_flow(
         register_model_if_accepted=register_model_if_accepted,
         min_jaccard_score=min_jaccard_score,
         max_hamming_loss=max_hamming_loss,
+        register_to_environment=register_to_environment,
     )
+    mlflow.end_run()
 
 
 if __name__ == "__main__":

@@ -92,6 +92,7 @@ def predict_flow(
     target_data_path: str = "subset/predictions",
     valid_tempo_min: float = 70,
     valid_tempo_max: float = 180,
+    environment: str = "dev",
 ):
     logger = get_run_logger()
     releases_data = get_latest_releases(
@@ -102,8 +103,8 @@ def predict_flow(
         return
     else:
         releases, date = releases_data
-    pipeline = fetch_model("genre-classifier-random-forest")
-    mlb = fetch_model("genre-classifier-multi-label-binarizer")
+    pipeline = fetch_model("genre-classifier-random-forest", environment)
+    mlb = fetch_model("genre-classifier-multi-label-binarizer", environment)
     predictions_data = predict(
         releases, pipeline, mlb, valid_tempo_min, valid_tempo_max
     )

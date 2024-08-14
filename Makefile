@@ -35,4 +35,6 @@ test:
 	poetry run pytest -s tests/unit
 
 integration_test:
-	poetry run pytest -s tests/integration
+	cd integration-tests; docker compose up -d
+	poetry run pytest -s integration-tests
+	cd integration-tests; docker compose down; docker compose rm -f
