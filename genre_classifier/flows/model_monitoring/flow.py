@@ -81,11 +81,13 @@ def calculate_metrics(
             report_path,
             to_path="index.html",
             bucket_block_name="evidently-static-dashboard",
+            ContentType="text/html",
         )
         upload_file_to_s3(
             json_path,
             to_path="report.json",
             bucket_block_name="evidently-static-dashboard",
+            ContentType="application/json",
         )
 
     return data_drift_report

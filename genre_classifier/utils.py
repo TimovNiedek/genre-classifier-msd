@@ -36,9 +36,10 @@ def upload_file_to_s3(
     data_path: Path | str,
     to_path: Path | str,
     bucket_block_name: str = "million-songs-dataset-s3",
+    **kwargs,
 ) -> None:
     bucket = S3Bucket.load(bucket_block_name)
-    bucket.upload_from_path(str(data_path), str(to_path))
+    bucket.upload_from_path(str(data_path), str(to_path), **kwargs)
 
 
 def download_file_from_s3(
