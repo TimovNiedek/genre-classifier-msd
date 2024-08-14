@@ -1,3 +1,5 @@
+import asyncio
+
 from prefect import flow
 
 from genre_classifier.flows.ingest_data.flow import ingest_flow
@@ -10,6 +12,7 @@ from genre_classifier.flows.train.flow import train_flow
 def complete_training_flow(
     mlflow_experiment_name: str,
     bucket_block_name: str = "million-songs-dataset-s3",
+    songs_dataset_size_limit: int | None = None,
     val_size: float = 0.1,
     test_size: float = 0.1,
     top_k_genres=50,
@@ -24,10 +27,12 @@ def complete_training_flow(
     max_hamming_loss: float = 0.18,
 ):
     ingested_data_path = ingest_flow()
-    preprocessed_data_path = preprocess_flow(
-        bucket_folder=ingested_data_path,
-        s3_bucket_block_name=bucket_block_name,
-        limit=None,
+    preprocessed_data_path = asyncio.run(
+        preprocess_flow(
+            bucket_folder=ingested_data_path,
+            s3_bucket_block_name=bucket_block_name,
+            limit=songs_dataset_size_limit,
+        )
     )
     split_data_path = split_data_flow(
         bucket_block_name=bucket_block_name,

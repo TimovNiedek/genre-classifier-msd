@@ -1,11 +1,10 @@
-from prefect_aws import S3Bucket, AwsCredentials
-import pandas as pd
+import os
 import tempfile
 from pathlib import Path
-
 from typing import Optional
 
-import os
+import pandas as pd
+from prefect_aws import AwsCredentials, S3Bucket
 
 
 def set_aws_credential_env(credentials_block_name: str = "aws-creds"):

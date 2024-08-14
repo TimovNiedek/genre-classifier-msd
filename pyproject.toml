@@ -24,6 +24,9 @@ pre-commit = "*"
 jupyter = "*"
 matplotlib = "*"
 tqdm = "*"
+pytest = "^8.3.2"
+pytest-mock = "^3.14.0"
+sqlalchemy = "^2.0.32"
 
 [build-system]
 requires = ["poetry-core"]

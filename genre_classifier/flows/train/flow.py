@@ -1,27 +1,25 @@
-from prefect import flow, task, get_run_logger
-from genre_classifier.utils import (
-    read_parquet_data,
-    get_file_uri,
-    set_aws_credential_env,
-)
-from genre_classifier.preprocess_common import fix_outliers as _fix_outliers
-from sklearn.impute import KNNImputer
-from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
-from sklearn.compose import make_column_transformer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import make_pipeline, Pipeline
-from sklearn.metrics import jaccard_score, hamming_loss
-from mlflow.models import infer_signature
-
-import numpy as np
-import pandas as pd
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import mlflow
 import mlflow.data
-from tempfile import TemporaryDirectory
+import numpy as np
+import pandas as pd
+from mlflow.models import infer_signature
+from prefect import flow, get_run_logger, task
+from sklearn.compose import make_column_transformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import KNNImputer
+from sklearn.metrics import hamming_loss, jaccard_score
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 
-from pathlib import Path
-
+from genre_classifier.preprocess_common import fix_outliers as _fix_outliers
+from genre_classifier.utils import (
+    get_file_uri,
+    read_parquet_data,
+    set_aws_credential_env,
+)
 
 FEATURE_COLS = ["duration", "key", "loudness", "mode", "tempo", "year"]
 NUMERICAL_COLS = ["duration", "loudness", "tempo", "year"]
@@ -145,6 +143,25 @@ def train(
     return pipeline, mlb
 
 
+def register_models(environment: str):
+    logger = get_run_logger()
+    run = mlflow.active_run()
+
+    new_version = mlflow.register_model(
+        f"runs:/{run.info.run_id}/model",
+        "genre-classifier-random-forest",
+        tags={"env": environment},
+    )
+    logger.info(f"Registered classifier with version {new_version.version}")
+
+    new_version = mlflow.register_model(
+        f"runs:/{run.info.run_id}/multi_label_binarizer",
+        "genre-classifier-multi-label-binarizer",
+        tags={"env": environment},
+    )
+    logger.info(f"Registered MultiLabelBinarizer with version {new_version.version}")
+
+
 @task
 def eval(
     test_data: pd.DataFrame,
@@ -153,6 +170,7 @@ def eval(
     register_model_if_accepted: bool,
     min_jaccard_score: float,
     max_hamming_loss: float,
+    register_to_environment: str,
 ) -> bool:
     logger = get_run_logger()
     X_test = test_data[FEATURE_COLS]
@@ -170,29 +188,7 @@ def eval(
         return False
     elif _jaccard_score >= min_jaccard_score and _hamming_loss <= max_hamming_loss:
         logger.info("Model evaluation criteria were met, registering model.")
-        run = mlflow.active_run()
-
-        new_version = mlflow.register_model(
-            f"runs:/{run.info.run_id}/model",
-            "genre-classifier-random-forest",
-            tags={
-                # In reality we'd do additional (possibly manual) checks before promoting to production
-                "env": "production"
-            },
-        )
-        logger.info(f"Registered classifier with version {new_version.version}")
-
-        new_version = mlflow.register_model(
-            f"runs:/{run.info.run_id}/multi_label_binarizer",
-            "genre-classifier-multi-label-binarizer",
-            tags={
-                # In reality we'd do additional (possibly manual) checks before promoting to production
-                "env": "production"
-            },
-        )
-        logger.info(
-            f"Registered MultiLabelBinarizer with version {new_version.version}"
-        )
+        register_models(register_to_environment)
         return True
     else:
         logger.info(
@@ -208,6 +204,7 @@ def log_params(**kwargs):
 @flow(log_prints=True)
 def train_flow(
     mlflow_experiment_name: str,
+    mlflow_tracking_uri: str = "http://127.0.0.1:5000",
     bucket_block_name: str = "million-songs-dataset-s3",
     data_path: str = "subset",
     top_k_genres=50,
@@ -220,11 +217,13 @@ def train_flow(
     register_model_if_accepted: bool = False,
     min_jaccard_score: float = 0.17,
     max_hamming_loss: float = 0.18,
+    register_to_environment: str = "dev",
 ):
     set_aws_credential_env()
 
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment(mlflow_experiment_name)
+    mlflow.start_run()
 
     log_params(
         top_k_genres=top_k_genres,
@@ -263,7 +262,9 @@ def train_flow(
         register_model_if_accepted=register_model_if_accepted,
         min_jaccard_score=min_jaccard_score,
         max_hamming_loss=max_hamming_loss,
+        register_to_environment=register_to_environment,
     )
+    mlflow.end_run()
 
 
 if __name__ == "__main__":

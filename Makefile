@@ -1,6 +1,12 @@
+.PHONY: init quality_checks infra deploy destroy tests integration_tests
+
 init:
 	poetry env use 3.12
 	poetry install
+	pre-commit install
+
+quality_checks:
+	pre-commit run --all-files
 
 infra:
 	cd terraform; \
@@ -26,3 +32,11 @@ deploy: Dockerfile genre_classifier deploy.py
 destroy:
 	cd terraform; \
 	terraform destroy -var-file variables.tfvars -input=false
+
+tests: genre_classifier/ tests/
+	poetry run pytest -s tests/
+
+integration_tests: genre_classifier/ integration-tests/
+	cd integration-tests; docker compose up -d
+	poetry run pytest -s integration-tests
+	cd integration-tests; docker compose down; docker compose rm -f

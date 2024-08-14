@@ -1,18 +1,16 @@
-from prefect import flow, task, get_run_logger
-from prefect_aws import S3Bucket
-from prefect.task_runners import ConcurrentTaskRunner
-from pydantic import BaseModel
-from pathlib import Path
-import pandas as pd
-import tempfile
-
-from urllib import request
 import asyncio
-
-from typing import Optional
-import h5py
+import tempfile
 from io import BytesIO
+from pathlib import Path
+from typing import Optional
+from urllib import request
 
+import h5py
+import pandas as pd
+from prefect import flow, get_run_logger, task
+from prefect.task_runners import ConcurrentTaskRunner
+from prefect_aws import S3Bucket
+from pydantic import BaseModel
 
 DEFAULT_GENRES_URL = "https://gist.githubusercontent.com/TimovNiedek/0530d9bc36aa3b3e83df4714c9a68c86/raw/5c7d92f81ed2f78ea949238c7563af0626d43b7d/spotify-genres.txt"
 ANALYSIS_FEATURE_NAMES = [

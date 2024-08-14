@@ -1,16 +1,16 @@
-import pandas as pd
-from genre_classifier.utils import read_parquet_data, upload_file_to_s3, get_file_uri
-from genre_classifier.flows.complete_training.flow import complete_training_flow
-from prefect import task, flow, get_run_logger
-from prefect_aws import S3Bucket
 import datetime
-from evidently.report import Report
-from evidently.metric_preset import DataDriftPreset
-from evidently import ColumnMapping
-import numpy as np
-
 import tempfile
 
+import numpy as np
+import pandas as pd
+from evidently import ColumnMapping
+from evidently.metric_preset import DataDriftPreset
+from evidently.report import Report
+from prefect import flow, get_run_logger, task
+from prefect_aws import S3Bucket
+
+from genre_classifier.flows.complete_training.flow import complete_training_flow
+from genre_classifier.utils import get_file_uri, read_parquet_data, upload_file_to_s3
 
 FEATURE_COLS = ["duration", "key", "loudness", "mode", "tempo", "year"]
 NUMERICAL_COLS = ["duration", "loudness", "tempo", "year"]
