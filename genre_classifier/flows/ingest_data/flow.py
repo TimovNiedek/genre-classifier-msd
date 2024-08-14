@@ -1,9 +1,9 @@
+from pathlib import Path
 from typing import Optional
 
-from pathlib import Path
-from prefect import flow, task, get_run_logger
-from prefect_shell.commands import ShellOperation
+from prefect import flow, get_run_logger, task
 from prefect_aws import S3Bucket
+from prefect_shell.commands import ShellOperation
 
 
 @task(retries=1, retry_delay_seconds=2)

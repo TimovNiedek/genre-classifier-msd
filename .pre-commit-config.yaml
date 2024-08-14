@@ -11,6 +11,10 @@ repos:
     # Run the linter.
     - id: ruff
       args: [ --fix ]
+    - id: ruff
+      name: ruff fix imports
+      args: [ "check", "--select", "I", "--fix" ]
+      files: "."
     - id: ruff-format
 - repo: https://github.com/psf/black
   rev: 22.10.0

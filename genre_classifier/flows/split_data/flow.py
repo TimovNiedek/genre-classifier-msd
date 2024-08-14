@@ -1,10 +1,10 @@
+import datetime
+
+import pandas as pd
 from prefect import flow, task
 from sklearn.model_selection import train_test_split
 
 from genre_classifier.utils import read_parquet_data, write_parquet_data
-
-import pandas as pd
-import datetime
 
 
 @task

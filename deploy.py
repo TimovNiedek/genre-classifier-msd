@@ -1,16 +1,15 @@
+import pendulum
 from prefect import deploy
 from prefect.deployments import DeploymentImage
-import pendulum
 from slugify import slugify
 
+from genre_classifier.flows.complete_training.flow import complete_training_flow
 from genre_classifier.flows.ingest_data.flow import ingest_flow
+from genre_classifier.flows.model_monitoring.flow import model_monitoring_flow
+from genre_classifier.flows.predict.flow import predict_flow
 from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
 from genre_classifier.flows.train.flow import train_flow
-from genre_classifier.flows.predict.flow import predict_flow
-from genre_classifier.flows.model_monitoring.flow import model_monitoring_flow
-from genre_classifier.flows.complete_training.flow import complete_training_flow
-
 
 VERSION = "v0"
 

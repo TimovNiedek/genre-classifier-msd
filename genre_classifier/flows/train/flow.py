@@ -1,27 +1,25 @@
-from prefect import flow, task, get_run_logger
-from genre_classifier.utils import (
-    read_parquet_data,
-    get_file_uri,
-    set_aws_credential_env,
-)
-from genre_classifier.preprocess_common import fix_outliers as _fix_outliers
-from sklearn.impute import KNNImputer
-from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
-from sklearn.compose import make_column_transformer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import make_pipeline, Pipeline
-from sklearn.metrics import jaccard_score, hamming_loss
-from mlflow.models import infer_signature
-
-import numpy as np
-import pandas as pd
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import mlflow
 import mlflow.data
-from tempfile import TemporaryDirectory
+import numpy as np
+import pandas as pd
+from mlflow.models import infer_signature
+from prefect import flow, get_run_logger, task
+from sklearn.compose import make_column_transformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import KNNImputer
+from sklearn.metrics import hamming_loss, jaccard_score
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import MinMaxScaler, MultiLabelBinarizer
 
-from pathlib import Path
-
+from genre_classifier.preprocess_common import fix_outliers as _fix_outliers
+from genre_classifier.utils import (
+    get_file_uri,
+    read_parquet_data,
+    set_aws_credential_env,
+)
 
 FEATURE_COLS = ["duration", "key", "loudness", "mode", "tempo", "year"]
 NUMERICAL_COLS = ["duration", "loudness", "tempo", "year"]

@@ -31,10 +31,10 @@ destroy:
 	cd terraform; \
 	terraform destroy -var-file variables.tfvars -input=false
 
-test:
-	poetry run pytest -s tests/unit
+tests:
+	poetry run pytest -s tests/
 
-integration_test:
+integration_tests:
 	cd integration-tests; docker compose up -d
 	poetry run pytest -s integration-tests
 	cd integration-tests; docker compose down; docker compose rm -f

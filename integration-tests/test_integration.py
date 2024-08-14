@@ -1,24 +1,23 @@
+import asyncio
+import datetime
 import os
-
-import pandas as pd
-import pytest
-import boto3
 import tempfile
 from pathlib import Path
 
-from genre_classifier.flows.ingest_data.flow import upload_to_s3
+import boto3
+import pandas as pd
+import pytest
+from mlflow.client import MlflowClient
 from prefect.testing.utilities import prefect_test_harness
+
 from genre_classifier.blocks.create_aws_credentials import create_aws_creds_block
 from genre_classifier.blocks.create_s3_buckets import create_s3_buckets
-from genre_classifier.utils import read_parquet_data
-
+from genre_classifier.flows.ingest_data.flow import upload_to_s3
+from genre_classifier.flows.predict.flow import predict_flow
 from genre_classifier.flows.preprocess.flow import preprocess_flow
 from genre_classifier.flows.split_data.flow import split_data_flow
 from genre_classifier.flows.train.flow import train_flow
-import asyncio
-from mlflow.client import MlflowClient
-
-import datetime
+from genre_classifier.utils import read_parquet_data
 
 current_timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d-%H-%M-%S")
 s3_base_directory = Path(current_timestamp)
@@ -201,3 +200,31 @@ def test_train(mlflow_client, experiment_id):
     model = mlflow_client.get_registered_model("genre-classifier-multi-label-binarizer")
     assert len(model.latest_versions) == 1
     assert model.latest_versions[0].tags.get("env") == "integration-test"
+
+
+def test_predict(mlflow_client, s3_client):
+    predictions_data_path = str(s3_base_directory / "subset" / "predictions")
+
+    predict_flow(
+        bucket_block_name="million-songs-dataset-s3-cicd",
+        source_data_path=str(s3_base_directory / "subset" / "splits" / "daily"),
+        target_data_path=predictions_data_path,
+        environment="integration-test",
+    )
+
+    # Check if the predictions are created
+    response = s3_client.list_objects(
+        Bucket="million-songs-dataset-cicd", Prefix=predictions_data_path
+    )
+    assert "Contents" in response
+    assert len(response["Contents"]) == 1
+    assert response["Contents"][0]["Key"].endswith("predictions.parquet")
+
+    # Check if the predictions are a valid dataframe with genre predictions
+    predictions_df: pd.DataFrame = read_parquet_data(
+        response["Contents"][0]["Key"],
+        bucket_block_name="million-songs-dataset-s3-cicd",
+    )
+    print(predictions_df.head())
+    assert len(predictions_df) == 10  # 10 releases per day
+    assert predictions_df.columns.tolist() == ["genres"]

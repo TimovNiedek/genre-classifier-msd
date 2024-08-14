@@ -1,13 +1,15 @@
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
+
 from genre_classifier.utils import (
-    set_aws_credential_env,
+    download_file_from_s3,
     get_file_uri,
+    read_parquet_data,
+    set_aws_credential_env,
     upload_dir_to_s3,
     upload_file_to_s3,
-    download_file_from_s3,
-    read_parquet_data,
     write_parquet_data,
 )
 

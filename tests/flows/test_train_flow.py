@@ -1,12 +1,14 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
+
 from genre_classifier.flows.train.flow import (
-    read_data,
-    get_top_genres,
+    eval,
     filter_top_genres,
     fix_outliers,
+    get_top_genres,
+    read_data,
     train,
-    eval,
     train_flow,
 )
 

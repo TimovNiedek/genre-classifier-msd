@@ -1,20 +1,17 @@
-from prefect import flow, task, get_run_logger
-
-from prefect_aws import S3Bucket
-
-import pandas as pd
-
-from mlflow.client import MlflowClient
 import mlflow
+import pandas as pd
+from mlflow.client import MlflowClient
+from prefect import flow, get_run_logger, task
+from prefect_aws import S3Bucket
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MultiLabelBinarizer
 
 from genre_classifier.preprocess_common import fix_outliers
 from genre_classifier.utils import (
     read_parquet_data,
-    write_parquet_data,
     set_aws_credential_env,
+    write_parquet_data,
 )
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MultiLabelBinarizer
 
 
 @task
@@ -52,8 +49,9 @@ def get_latest_releases(
         return None
 
     latest_date = release_directories[len(prediction_directories)]
-    logger.info(f"Fetching data for date {latest_date}")
-    df = read_parquet_data(f"{source_data_path}/{latest_date}/releases.parquet")
+    data_path = f"{source_data_path}/{latest_date}/releases.parquet"
+    logger.info(f"Fetching data for date {latest_date} from path {data_path}")
+    df = read_parquet_data(data_path, bucket_block_name=bucket_block_name)
     logger.info(f"Found {len(df)} rows")
     return df, latest_date
 
