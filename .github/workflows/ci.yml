@@ -14,11 +14,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Poetry Install
-      uses: knowsuchagency/poetry-install@v2
-      with:
-        # Have poetry create a virtualenv for the project on installation.
-        create-virtualenv: true
+    - name: Install poetry
+      uses: actions/setup-python@v1
+      run: |
+        pip install -U pip
+        pip install poetry
 
     - name: Install dependencies
       run: make init
