@@ -214,7 +214,7 @@ def train_flow(
     imputer_n_neighbors: int = 5,
     class_weight: str | None = "balanced",
     seed=42,
-    register_model_if_accepted: bool = False,
+    register_model_if_accepted: bool = True,
     min_jaccard_score: float = 0.12,
     max_hamming_loss: float = 0.3,
     register_to_environment: str = "dev",
