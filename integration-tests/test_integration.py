@@ -53,7 +53,7 @@ def cicd_data(s3_client) -> Path:
         s3_client.download_file(
             "msd-integration-test-data", "msd-integration.tar.gz", archive_local_path
         )
-        os.system(f"tar -xzf {archive_local_path} -C {tmpdir}")
+        os.system(f'tar -xzf {archive_local_path} -C {tmpdir} --exclude="._*"')
         yield Path(tmpdir) / "MillionSongSubset"
 
 
@@ -76,7 +76,8 @@ def experiment_id(mlflow_client) -> str:
 def test_upload_to_s3(cicd_data, s3_client):
     assert Path(cicd_data).exists()
     track_files = list(cicd_data.rglob("*.h5"))
-    print(f"Number of files: {len(track_files)}")
+    track_files = [file for file in track_files if Path(file).name.startswith("TR")]
+
     result = upload_to_s3(
         cicd_data,
         s3_base_directory / "subset",
