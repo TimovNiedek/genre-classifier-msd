@@ -37,13 +37,13 @@ def s3_client():
     yield _client
 
     # cleanup the bucket
-    response = _client.list_objects(
-        Bucket="million-songs-dataset-cicd", Prefix=str(s3_base_directory)
-    )
-    if "Contents" not in response:
-        return
-    for track in response["Contents"]:
-        _client.delete_object(Bucket="million-songs-dataset-cicd", Key=track["Key"])
+    # response = _client.list_objects(
+    #     Bucket="million-songs-dataset-cicd", Prefix=str(s3_base_directory)
+    # )
+    # if "Contents" not in response:
+    #     return
+    # for track in response["Contents"]:
+    #     _client.delete_object(Bucket="million-songs-dataset-cicd", Key=track["Key"])
 
 
 @pytest.fixture(scope="session")
