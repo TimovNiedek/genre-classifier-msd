@@ -20,6 +20,7 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 ## Stack
 
 * Prefect: workflow orchestration (training, inference, monitoring)
+  * Uses a Docker work pool
 * sklearn: model training
 * MLflow: experiment tracking & model registry
 * Evidently AI: model monitoring
