@@ -3,6 +3,8 @@ name: Makefile CD
 on:
   push:
     branches: [ "main" ]
+  pull_request:  # temporary, remove before merging
+    branches: [ "main" ]
 
 jobs:
   tests:
@@ -34,4 +36,5 @@ jobs:
     - name: Write dev key
       run: |
         echo ${{secrets.DEV_SSH_KEY}} >> ~/.ssh/dev_key.pub
+        cat ~/.ssh/dev_key.pub
       shell: bash
