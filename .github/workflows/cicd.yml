@@ -17,12 +17,23 @@ jobs:
       with:
         python-version: '3.12'
     - uses: pre-commit/action@v3.0.1
+    - uses: KengoTODA/actions-setup-docker-compose@v1
+      with:
+        version: '2.14.2'
 
     - name: Install poetry
       run: |
         pip install -U pip
         pip install poetry
 
-
     - name: Install dependencies
       run: make init
+
+    - name: Run linters & other quality checks
+      run: make quality_checks
+
+    - name: Run unit tests
+      run: make tests
+
+    - name: Run integration tests
+      run: make integration_tests
