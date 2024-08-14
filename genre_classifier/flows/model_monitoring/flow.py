@@ -99,7 +99,8 @@ def validate_model_performance(report: Report) -> bool:
 
 @flow
 def model_monitoring_flow(
-    bucket_block_name="million-songs-dataset-s3", trigger_retrain_if_needed=True
+    bucket_block_name: str = "million-songs-dataset-s3",
+    trigger_retrain_if_needed: bool = True,
 ) -> bool:
     logger = get_run_logger()
     reference = get_reference_data(bucket_block_name=bucket_block_name)
