@@ -19,7 +19,7 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 
 ## Stack
 
-* Prefect: workflow orchestration
+* Prefect: workflow orchestration (training, inference, monitoring)
 * sklearn: model training
 * MLflow: experiment tracking & model registry
 * Evidently AI: model monitoring
@@ -28,6 +28,10 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 * AWS EC2: Prefect server host
 * ruff: linter & code formatter
 * poetry: dependency management
+* Docker: containerization
+* GitHub Actions: CI/CD
+* pre-commit: git hooks
+* pytest: unit tests & integration tests
 
 ## Design
 
@@ -178,20 +182,6 @@ The inference pipeline is set to run every 5 minutes. View the runs in the Prefe
 The monitoring pipeline is set to run every morning. You can manually trigger it from the Prefect UI if you want to see the results immediately.
 The flow is called `model-monitoring-flow`. The results are available at http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/index.html.
 
-## To-Do's
+## Cleanup
 
-* [x] Add makefile
-    * [x] Deploy training pipeline
-    * [x] Execute training pipeline
-    * [x] Test flow steps
-* [x] Add unit tests
-* [x] Add integration tests
-* [x] Add CI / CD
-* [x] Add mlflow server to IaC
-* [x] Add observability tooling
-* [x] Add experiment tracking
-* [x] Design deployment method (batch / streaming)
-    * [x] Mock new incoming data
-* [x] Containerize & deploy model
-* [x] Ensure dependency versions are specified
-* [ ] Experiment with better model architectures
+To clean up the infrastructure, run `make destroy`. This will destroy all the blocks created by Terraform.
