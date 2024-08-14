@@ -14,11 +14,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v1
+    - uses: pre-commit/action@v3.0.1
 
     - name: Install poetry
       run: |
         pip install -U pip
         pip install poetry
+
 
     - name: Install dependencies
       run: make init
