@@ -1,7 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import pytest
+from prefect.testing.utilities import prefect_test_harness
 
+from genre_classifier.blocks.create_aws_credentials import create_aws_creds_block
+from genre_classifier.blocks.create_s3_buckets import create_s3_buckets
 from genre_classifier.flows.train.flow import (
     eval,
     filter_top_genres,
@@ -11,6 +15,14 @@ from genre_classifier.flows.train.flow import (
     train,
     train_flow,
 )
+
+
+@pytest.fixture(autouse=True, scope="session")
+def prefect_test_fixture():
+    with prefect_test_harness():
+        create_aws_creds_block()
+        create_s3_buckets()
+        yield
 
 
 class TestTrainFlow:
@@ -99,7 +111,7 @@ class TestTrainFlow:
         mlb = MagicMock()
         mlb.transform.return_value = [[1, 0], [0, 1]]
         pipeline.predict.return_value = [[1, 0], [0, 1]]
-        result = eval(df, pipeline, mlb, True, 0.1, 0.2)
+        result = eval(df, pipeline, mlb, True, 0.0, 1.0, True)
         assert result
         mock_log_metric.assert_called()
         mock_register_model.assert_called()
@@ -114,8 +126,12 @@ class TestTrainFlow:
     @patch("mlflow.set_experiment")
     @patch("mlflow.set_tracking_uri")
     @patch("mlflow.log_params")
+    @patch("mlflow.start_run")
+    @patch("mlflow.end_run")
     def test_train_flow(
         self,
+        mock_end_run,
+        mock_start_run,
         mock_log_params,
         mock_set_tracking_uri,
         mock_set_experiment,
@@ -147,3 +163,5 @@ class TestTrainFlow:
         mock_set_experiment.assert_called_once_with("test_experiment")
         mock_set_tracking_uri.assert_called_once_with("http://127.0.0.1:5000")
         mock_log_params.assert_called()
+        mock_start_run.assert_called()
+        mock_end_run.assert_called()
