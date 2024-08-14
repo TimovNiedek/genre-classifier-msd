@@ -1,0 +1,37 @@
+name: Makefile CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    - uses: pre-commit/action@v3.0.1
+
+    - name: Install poetry
+      run: |
+        pip install -U pip
+        pip install poetry
+
+    - name: Install dependencies
+      run: make init
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+
+    - name: Write dev key
+      run: |
+        echo ${{secrets.DEV_SSH_KEY}} >> ~/.ssh/dev_key.pub
+      shell: bash
