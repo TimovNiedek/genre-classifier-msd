@@ -42,18 +42,12 @@ resource "aws_s3_bucket_public_access_block" "public_access_block" {
 
 resource "aws_s3_bucket_policy" "allow_public_access_evidently" {
   bucket = aws_s3_bucket.evidently_static_dashboard_tvn.id
-  policy = data.aws_iam_policy_document.allow_public_access.json
+  policy = data.template_file.public_access_policy.rendered
 }
 
-data "aws_iam_policy_document" "allow_public_access" {
-  statement {
-    sid    = "PublicReadGetObject"
-    effect = "Allow"
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::evidently-static-dashboard-tvn/*"]
+data "template_file" "public_access_policy" {
+  template = file("${path.module}/templates/public_access_policy.json")
+  vars = {
+    bucket_name = aws_s3_bucket.evidently_static_dashboard_tvn.id
   }
 }
