@@ -1,7 +1,18 @@
-# genre-classifier-msd
+# Genre Classifier
 
 This repository contains the code for the genre classifier task for the MLOps Zoomcamp course.
 For more information, see the [MLOps Zoomcamp course repository](https://github.com/DataTalksClub/mlops-zoomcamp).
+
+**Table of contents**:
+1. [Problem description](#problem-description)
+2. [Stack](#stack)
+3. [Design](#design)
+4. [Getting started](#getting-started)
+5. [Deploy](#deploy)
+6. [Execute flows](#execute-flows)
+7. [Tests](#tests)
+8. [Cleanup](#cleanup)
+
 
 ## Problem description
 
