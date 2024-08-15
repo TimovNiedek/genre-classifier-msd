@@ -28,7 +28,7 @@ aws --version
 aws configure set aws_access_key_id ${aws_access_key_id}
 aws configure set aws_secret_access_key ${aws_access_key_secret}
 
-pip install -U prefect prefect-aws prefect-docker mlflow boto3 psycopg2-binary
+pip install -U prefect prefect-aws prefect-docker mlflow boto3 psycopg2-binary pyopenssl
 prefect version
 
 # Create a service file for Prefect Server and start & enable it

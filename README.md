@@ -1,7 +1,18 @@
-# genre-classifier-msd
+# Genre Classifier
 
 This repository contains the code for the genre classifier task for the MLOps Zoomcamp course.
 For more information, see the [MLOps Zoomcamp course repository](https://github.com/DataTalksClub/mlops-zoomcamp).
+
+**Table of contents**:
+1. [Problem description](#problem-description)
+2. [Stack](#stack)
+3. [Design](#design)
+4. [Getting started](#getting-started)
+5. [Deploy](#deploy)
+6. [Execute flows](#execute-flows)
+7. [Tests](#tests)
+8. [Cleanup](#cleanup)
+
 
 ## Problem description
 
@@ -19,38 +30,44 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 
 ## Stack
 
-* Prefect: workflow orchestration
+* Prefect: workflow orchestration (training, inference, monitoring)
+  * Uses a Docker work pool
 * sklearn: model training
 * MLflow: experiment tracking & model registry
 * Evidently AI: model monitoring
 * Terraform: IaC
 * AWS S3: storage
-* AWS EC2: Prefect server host
+* AWS EC2: Prefect server & MLflow server host
 * ruff: linter & code formatter
 * poetry: dependency management
+* Docker: containerization
+* GitHub Actions: CI/CD
+* pre-commit: git hooks
+* pytest: unit tests & integration tests
+* makefile: task automation
 
 ## Design
 
-There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
+![Architecture diagram](./images/architecture.svg)
 
 ### Training pipeline
 
-1. `ingest_data`:
+1. `ingest-data-flow`:
     * Load the Million Song Dataset subset.
     * Extract .h5 files for each track.
     * Upload the files to an S3 bucket (default: `subset/MillionSongSubset`).
-2. `preprocess`:
+2. `preprocess-flow`:
     * Load the .h5 files.
     * For each track, extract the features.
     * Load a separate file with a subset of valid genre tags and extract the genres from the metadata for each track.
     * Write the output to a single Parquet file (default: `subset/MillionSongSubset/subset.parquet`).
-3. `split_data`:
+3. `split-data-flow`:
     * First, create a test set of tracks that will be used for inference.
       * The tracks with the latest release year are used for the test set.
       * The test set is further split into chunks and written to separate directories (default: `subset/daily`) in the S3 bucket to simulate a real-world scenario where new tracks are released each day.
     * Split the remaining tracks into a random training and validation set.
       * Write the train, validation and test sets to the S3 bucket as Parquet files (default: `subset/train.parquet`, `subset/val.parquet` and `subset/test.parquet`).
-4. `train`:
+4. `train-flow`:
     * Load the training & validation sets.
     * Filter the genre labels to include only the top K genres (`top_k_genres` is a hyperparameter).
     * Fix outliers, apply feature normalization and impute missing values.
@@ -59,26 +76,33 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
       * The main metrics are the jaccard score and the hamming loss.
     * If the metrics are better than some predefined thresholds, register the model in MLflow's model registry.
 
-There is an additional flow, `complete_training`, which calls the above training flows as subflows, chaining everything together.
+There is an additional flow, `complete-training-flow`, which calls the above training flows as subflows, chaining everything together.
 If you want to train a model, it is recommended to use this flow, as it will ensure that all the steps are executed in the correct order.
 
-### Inference pipeline
+### Prediction pipeline
 
-The inference pipeline is scheduled to be executed regularly, e.g. once a day. It is designed to simulate a real-world scenario where new tracks are released each day.
+The prediction service is deployed as a batch inference pipeline.
+It is designed to simulate a real-world scenario where new tracks are released each day.
 At every run, the pipeline will predict the genres for one day's worth of tracks.
+To see immediate results for demo purposes, it is scheduled to run every 5 minutes, picking the data for a new day each time.
 
-1. `predict`:
+1. `predict-flow`:
     * Find a batch of tracks that hasn't been analysed yet.
     * Load the model from MLflow's model registry.
     * Predict the genres for each track.
     * Write the results to a Parquet file in the S3 bucket (default: `subset/predictions`).
-2. `model_monitoring`:
+2. `model-monitoring-flow`:
     * Load the predictions from the S3 bucket.
     * Calculate the model performance metrics.
-    * Create an Evidently AI report and upload it to the S3 bucket (default: `subset/metrics_report.html`).
+    * Create an Evidently AI report and upload it to an S3 bucket that serves it as a static html page.
+      * This bucket is created in Terraform and is named `evidently-static-dashboard-tvn` by default. To run it yourself, change the bucket name in [storage](terraform/storage.tf) and [create_s3_buckets.py](genre_classifier/blocks/create_s3_buckets.py).
+      * The report is available at `http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/`, or `http://<BUCKET>.s3-website.<REGION>.amazonaws.com/report.html` if you changed the bucket name.
     * If the model performance is below some predefined thresholds, call the complete training pipeline as a subflow.
 
 ## Getting started
+
+To run the code, you need to set up the infrastructure, initialize the local environment, connect to the Prefect & MLflow server, and deploy the flows.
+It is very important to follow the below instructions carefully, as the flows are designed to work with the infrastructure set up by Terraform.
 
 ### Prerequisites
 
@@ -148,24 +172,42 @@ Successfully created/updated all deployments!
 ├────────────────────────────────────────────────┼─────────┼─────────┤
 │ complete-training-flow/complete-training-v0    │ applied │         │
 ├────────────────────────────────────────────────┼─────────┼─────────┤
+│ model-monitoring-flow/model-monitoring-v0      │ applied │         │
+├────────────────────────────────────────────────┼─────────┼─────────┤
 │ predict-flow/genre-classifier-predict-v0       │ applied │         │
 └────────────────────────────────────────────────┴─────────┴─────────┘
+
 ```
 
-## To-Do's
+## Execute flows
 
-* [x] Add makefile
-    * [x] Deploy training pipeline
-    * [x] Execute training pipeline
-    * [ ] Test flow steps
-* [ ] Add unit tests
-* [ ] Add integration tests
-* [ ] Add CI / CD
-* [x] Add mlflow server to IaC
-* [ ] Add observability tooling
-* [x] Add experiment tracking
-* [x] Design deployment method (batch / streaming)
-    * [x] Mock new incoming data
-* [x] Containerize & deploy model
-* [x] Ensure dependency versions are specified
-* [ ] Experiment with better model architectures
+### Train
+
+First, execute the complete training run to train the model. This will run the ingest, preprocess, split data and train flows in sequence.
+Open the Prefect UI at http://localhost:4200/flows and trigger the `complete-training-flow`. All parameters are set to default values, you only need to set the MLflow experiment name.
+
+The experiment is tracked in MLflow, and you can view the results at http://localhost:5000. If the results of the training are good, the model will be registered in the model registry.
+
+### Batch Inference
+
+The inference pipeline is set to run every 5 minutes. View the runs in the Prefect UI at http://localhost:4200/flows.
+The results are stored in the S3 bucket and can be viewed in the `subset/predictions` directory.
+
+### Monitoring
+
+The monitoring pipeline is set to run every morning. You can manually trigger it from the Prefect UI if you want to see the results immediately.
+The flow is called `model-monitoring-flow`. The results are available at http://evidently-static-dashboard-tvn.s3-website.eu-central-1.amazonaws.com/index.html.
+
+If the monitoring pipeline detects data drift, it will trigger the complete training pipeline to retrain the model.
+To disable this behaviour, set the `trigger_retrain_if_needed` parameter to `False` in the `model-monitoring-flow`.
+
+## Tests
+
+To run unit tests, execute `make tests`. This will run the tests in the `tests` directory.
+The integration tests can be run by executing `make integration_tests`. This requires the infrastructure to be set up, as it
+writes some temporary files to a bucket called `million-songs-dataset-s3-cicd`.
+
+
+## Cleanup
+
+To clean up the infrastructure, run `make destroy`. This will destroy all the blocks created by Terraform.

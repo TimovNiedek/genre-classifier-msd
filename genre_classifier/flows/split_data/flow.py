@@ -2,6 +2,7 @@ import datetime
 
 import pandas as pd
 from prefect import flow, task
+from prefect.tasks import task_input_hash
 from sklearn.model_selection import train_test_split
 
 from genre_classifier.utils import read_parquet_data, write_parquet_data
@@ -15,7 +16,7 @@ def read_data(
     return data
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def split_by_release_year(
     df: pd.DataFrame, test_size: float
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -25,7 +26,7 @@ def split_by_release_year(
     return sorted_df.iloc[:cutoff_index], sorted_df.iloc[cutoff_index:]
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def random_split(
     df: pd.DataFrame, test_size, seed: int = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -33,7 +34,7 @@ def random_split(
     return train_data, test_data
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def upload_df_to_s3(
     df: pd.DataFrame,
     data_path: str,
@@ -42,7 +43,7 @@ def upload_df_to_s3(
     write_parquet_data(df, data_path, bucket_block_name)
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def add_daily_releases(
     df: pd.DataFrame,
     start_date: datetime.date,

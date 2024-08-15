@@ -15,6 +15,12 @@ def create_s3_buckets():
     )
     cicd_bucket_block.save(name="million-songs-dataset-s3-cicd", overwrite=True)
 
+    cicd_bucket_block = S3Bucket(
+        bucket_name="evidently-static-dashboard-tvn",
+        credentials=aws_credentials_block,
+    )
+    cicd_bucket_block.save(name="evidently-static-dashboard", overwrite=True)
+
 
 if __name__ == "__main__":
     create_s3_buckets()

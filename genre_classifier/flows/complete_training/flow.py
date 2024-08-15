@@ -1,5 +1,3 @@
-import asyncio
-
 from prefect import flow
 
 from genre_classifier.flows.ingest_data.flow import ingest_flow
@@ -23,16 +21,15 @@ def complete_training_flow(
     class_weight: str | None = "balanced",
     seed=42,
     register_model_if_accepted: bool = True,
-    min_jaccard_score: float = 0.17,
-    max_hamming_loss: float = 0.18,
+    min_jaccard_score: float = 0.12,
+    max_hamming_loss: float = 0.3,
+    register_to_environment: str = "dev",
 ):
     ingested_data_path = ingest_flow()
-    preprocessed_data_path = asyncio.run(
-        preprocess_flow(
-            bucket_folder=ingested_data_path,
-            s3_bucket_block_name=bucket_block_name,
-            limit=songs_dataset_size_limit,
-        )
+    preprocessed_data_path = preprocess_flow(
+        bucket_folder=ingested_data_path,
+        s3_bucket_block_name=bucket_block_name,
+        limit=songs_dataset_size_limit,
     )
     split_data_path = split_data_flow(
         bucket_block_name=bucket_block_name,
@@ -55,6 +52,7 @@ def complete_training_flow(
         register_model_if_accepted=register_model_if_accepted,
         min_jaccard_score=min_jaccard_score,
         max_hamming_loss=max_hamming_loss,
+        register_to_environment=register_to_environment,
     )
 
 

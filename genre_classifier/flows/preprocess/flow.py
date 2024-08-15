@@ -9,6 +9,7 @@ import h5py
 import pandas as pd
 from prefect import flow, get_run_logger, task
 from prefect.task_runners import ConcurrentTaskRunner
+from prefect.tasks import task_input_hash
 from prefect_aws import S3Bucket
 from pydantic import BaseModel
 
@@ -34,7 +35,9 @@ def list_file_paths(
     logger = get_run_logger()
     bucket = S3Bucket.load(bucket_block_name)
     objects = bucket.list_objects(folder=bucket_folder)
-    object_keys = [obj["Key"] for obj in objects if obj["Key"].endswith(".h5")]
+    object_keys = list(
+        sorted([obj["Key"] for obj in objects if obj["Key"].endswith(".h5")])
+    )
     logger.info(f"Found {len(object_keys)} objects")
 
     if n:
@@ -131,7 +134,7 @@ async def get_song_metadata_async(
     return song_metadata
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 def write_features(
     song_metadata: list[SongMetadata],
     target_path: str = "subset/MillionSongSubset/subset.parquet",
@@ -147,7 +150,7 @@ def write_features(
         bucket.upload_from_path(from_path=f.name, to_path=target_path)
 
 
-@task
+@task(cache_key_fn=task_input_hash)
 async def get_song_metadata_list(
     h5_paths: str,
     genre_filter: list[str] = [],

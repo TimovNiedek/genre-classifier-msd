@@ -73,13 +73,21 @@ def calculate_metrics(
     print(data_drift_report)
 
     with tempfile.TemporaryDirectory() as dir:
-        report_path = f"{dir}/report.html"
-        data_drift_report.save_json(f"{dir}/report.json")
+        report_path = f"{dir}/index.html"
+        json_path = f"{dir}/report.json"
+        data_drift_report.save_json(json_path)
         data_drift_report.save_html(report_path)
         upload_file_to_s3(
             report_path,
-            to_path="subset/metrics_report.html",
-            bucket_block_name=bucket_block_name,
+            to_path="index.html",
+            bucket_block_name="evidently-static-dashboard",
+            ExtraArgs={"ContentType": "text/html"},
+        )
+        upload_file_to_s3(
+            json_path,
+            to_path="report.json",
+            bucket_block_name="evidently-static-dashboard",
+            ExtraArgs={"ContentType": "application/json"},
         )
 
     return data_drift_report
@@ -93,7 +101,8 @@ def validate_model_performance(report: Report) -> bool:
 
 @flow
 def model_monitoring_flow(
-    bucket_block_name="million-songs-dataset-s3", trigger_retrain_if_needed=True
+    bucket_block_name: str = "million-songs-dataset-s3",
+    trigger_retrain_if_needed: bool = True,
 ) -> bool:
     logger = get_run_logger()
     reference = get_reference_data(bucket_block_name=bucket_block_name)
