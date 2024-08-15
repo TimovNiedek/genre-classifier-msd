@@ -37,26 +37,26 @@ The task is a **multi-class**, **multi-label classification** task, i.e. for any
 
 ## Design
 
-There are several flows defined in [genre_classifier/flows](./genre_classifier/flows/):
+![Architecture diagram](./images/architecture.svg)
 
 ### Training pipeline
 
-1. `ingest_data`:
+1. `ingest-data-flow`:
     * Load the Million Song Dataset subset.
     * Extract .h5 files for each track.
     * Upload the files to an S3 bucket (default: `subset/MillionSongSubset`).
-2. `preprocess`:
+2. `preprocess-flow`:
     * Load the .h5 files.
     * For each track, extract the features.
     * Load a separate file with a subset of valid genre tags and extract the genres from the metadata for each track.
     * Write the output to a single Parquet file (default: `subset/MillionSongSubset/subset.parquet`).
-3. `split_data`:
+3. `split-data-flow`:
     * First, create a test set of tracks that will be used for inference.
       * The tracks with the latest release year are used for the test set.
       * The test set is further split into chunks and written to separate directories (default: `subset/daily`) in the S3 bucket to simulate a real-world scenario where new tracks are released each day.
     * Split the remaining tracks into a random training and validation set.
       * Write the train, validation and test sets to the S3 bucket as Parquet files (default: `subset/train.parquet`, `subset/val.parquet` and `subset/test.parquet`).
-4. `train`:
+4. `train-flow`:
     * Load the training & validation sets.
     * Filter the genre labels to include only the top K genres (`top_k_genres` is a hyperparameter).
     * Fix outliers, apply feature normalization and impute missing values.
@@ -65,7 +65,7 @@ There are several flows defined in [genre_classifier/flows](./genre_classifier/f
       * The main metrics are the jaccard score and the hamming loss.
     * If the metrics are better than some predefined thresholds, register the model in MLflow's model registry.
 
-There is an additional flow, `complete_training`, which calls the above training flows as subflows, chaining everything together.
+There is an additional flow, `complete-training-flow`, which calls the above training flows as subflows, chaining everything together.
 If you want to train a model, it is recommended to use this flow, as it will ensure that all the steps are executed in the correct order.
 
 ### Prediction pipeline
@@ -75,12 +75,12 @@ It is designed to simulate a real-world scenario where new tracks are released e
 At every run, the pipeline will predict the genres for one day's worth of tracks.
 To see immediate results for demo purposes, it is scheduled to run every 5 minutes, picking the data for a new day each time.
 
-1. `predict`:
+1. `predict-flow`:
     * Find a batch of tracks that hasn't been analysed yet.
     * Load the model from MLflow's model registry.
     * Predict the genres for each track.
     * Write the results to a Parquet file in the S3 bucket (default: `subset/predictions`).
-2. `model_monitoring`:
+2. `model-monitoring-flow`:
     * Load the predictions from the S3 bucket.
     * Calculate the model performance metrics.
     * Create an Evidently AI report and upload it to an S3 bucket that serves it as a static html page.
